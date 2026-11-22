@@ -27,8 +27,8 @@ jobs:
           test -n "$DEPLOY_SSH_KEY"
           test -n "$DEPLOY_KNOWN_HOSTS"
           install -m 700 -d ~/.ssh
-          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/alira_deploy
-          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf '%s\n' "$DEPLOY_SSH_KEY" | tr -d '\r' > ~/.ssh/alira_deploy
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" | tr -d '\r' > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/alira_deploy ~/.ssh/known_hosts
 
       - name: Sync application files
@@ -38,30 +38,30 @@ jobs:
         run: |
           test -n "$DEPLOY_HOST"
           test -n "$DEPLOY_USER"
-          rsync -rltz \
-            -e 'ssh -i ~/.ssh/alira_deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes' \
-            --exclude='.git/' \
-            --exclude='.github/' \
-            --exclude='.next/' \
-            --exclude='node_modules/' \
-            --exclude='.env' \
-            --exclude='.env.*' \
-            --exclude='public/uploads/' \
-            --exclude='src/data/*.json' \
-            --exclude='scratch/' \
-            --exclude='deploy/' \
-            --exclude='sshnet/' \
-            --exclude='sshnet2020/' \
-            --exclude='sshnet.zip' \
-            --exclude='sshnet2020.zip' \
-            --exclude='project_handover.md' \
-            --exclude='SshTunnel.cs' \
-            --exclude='deploy_*.py' \
-            --exclude='restart_pm2.py' \
-            --exclude='restore_local_files.py' \
-            --exclude='ssh_check.py' \
-            --exclude='upload_pages.py' \
-            --exclude='verify_product.ps1' \
+          rsync -rltz \\
+            -e 'ssh -i ~/.ssh/alira_deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes' \\
+            --exclude='.git/' \\
+            --exclude='.github/' \\
+            --exclude='.next/' \\
+            --exclude='node_modules/' \\
+            --exclude='.env' \\
+            --exclude='.env.*' \\
+            --exclude='public/uploads/' \\
+            --exclude='src/data/*.json' \\
+            --exclude='scratch/' \\
+            --exclude='deploy/' \\
+            --exclude='sshnet/' \\
+            --exclude='sshnet2020/' \\
+            --exclude='sshnet.zip' \\
+            --exclude='sshnet2020.zip' \\
+            --exclude='project_handover.md' \\
+            --exclude='SshTunnel.cs' \\
+            --exclude='deploy_*.py' \\
+            --exclude='restart_pm2.py' \\
+            --exclude='restore_local_files.py' \\
+            --exclude='ssh_check.py' \\
+            --exclude='upload_pages.py' \\
+            --exclude='verify_product.ps1' \\
             ./ "$DEPLOY_USER@$DEPLOY_HOST:/var/www/alira/"
 
       - name: Build, restart, and check site
@@ -69,8 +69,8 @@ jobs:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
         run: |
-          ssh -i ~/.ssh/alira_deploy \
-            -o IdentitiesOnly=yes \
-            -o StrictHostKeyChecking=yes \
-            "$DEPLOY_USER@$DEPLOY_HOST" \
+          ssh -i ~/.ssh/alira_deploy \\
+            -o IdentitiesOnly=yes \\
+            -o StrictHostKeyChecking=yes \\
+            "$DEPLOY_USER@$DEPLOY_HOST" \\
             'cd /var/www/alira && npm ci && npm run build && sudo -n /usr/local/sbin/alira-pm2-restart && curl --fail --silent --show-error --max-time 15 http://127.0.0.1:3000/ >/dev/null'
