@@ -1,0 +1,40 @@
+# Local build artifacts and dependencies
+node_modules/
+.next/
+out/
+.turbo/
+.deploy-key-tmp/
+.repowise/
+work/
+логотипы/
+urls_for_recrawl.txt
+
+# Runtime secrets and customer data
+.env
+.env.*
+!.env.example
+src/data/submissions.json
+public/uploads/
+
+# Local scraping/debugging and obsolete deployment helpers
+scratch/
+deploy/
+scripts/*
+!scripts/prepare-standalone.mjs
+sshnet/
+sshnet2020/
+sshnet.zip
+sshnet2020.zip
+project_handover.md
+SshTunnel.cs
+deploy_*.py
+restart_pm2.py
+restore_local_files.py
+ssh_check.py
+upload_pages.py
+verify_product.ps1
+
+# OS/editor noise
+Thumbs.db
+Desktop.ini
+.DS_Store

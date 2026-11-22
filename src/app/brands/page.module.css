@@ -1,0 +1,49 @@
+.page {
+  padding: 40px 0 80px;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.title {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 40px;
+}
+
+.brandsList {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.brandRow {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 40px;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 40px;
+  align-items: center;
+}
+
+.brandLogo {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.brandInfo h2 {
+  font-size: 24px;
+  margin-bottom: 16px;
+}
+
+.brandInfo p {
+  color: var(--text-muted);
+  line-height: 1.6;
+  font-size: 16px;
+}

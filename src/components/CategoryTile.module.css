@@ -1,0 +1,50 @@
+.tile {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 40px;
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  height: 300px;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.tile:hover {
+  border-color: var(--accent);
+  background-color: #ffffff;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--foreground);
+  margin-bottom: 16px;
+  z-index: 1;
+}
+
+.subtitle {
+  font-size: 16px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  z-index: 1;
+  max-width: 80%;
+}
+
+.icon {
+  position: absolute;
+  bottom: -20px;
+  right: -20px;
+  color: var(--surface-hover);
+  transition: all 0.2s;
+  z-index: 0;
+}
+
+.tile:hover .icon {
+  color: var(--accent);
+  opacity: 0.1;
+  transform: scale(1.1);
+}

@@ -1,0 +1,32 @@
+[
+  {
+    "id": "rohde-schwarz",
+    "name": "Rohde & Schwarz",
+    "description": "Ведущий производитель измерительного оборудования: генераторы сигналов, измерители спектра, осциллографы.",
+    "logo": "/brands/image.webp"
+  },
+  {
+    "id": "keysight",
+    "name": "Keysight Technologies",
+    "description": "Прецизионные векторные измерители цепей и высокочастотные решения.",
+    "logo": "/brands/Keysight_Agilent-Technologies.png"
+  },
+  {
+    "id": "anritsu",
+    "name": "Anritsu",
+    "description": "Оборудование для тестирования оптоволокна, антенные измерители и измерители ширины линии.",
+    "logo": "/brands/2e8996949f3d9653198a12ab8631a0e6_1640bc3c1b.png"
+  },
+  {
+    "id": "lecroy",
+    "name": "Teledyne LeCroy",
+    "description": "Высокопроизводительные осциллографы и измерители протоколов.",
+    "logo": "/brands/lecroy-logo-blue-rgb.jpg"
+  },
+  {
+    "id": "ceyear",
+    "name": "Ceyear",
+    "description": "Инновационное контрольно-измерительное оборудование, включая оптические измерители (внесены в ГРСИ).",
+    "logo": "/brands/Ceyear.png"
+  }
+]

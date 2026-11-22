@@ -1,0 +1,64 @@
+.footer {
+  background-color: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 60px 0 40px;
+  margin-top: auto;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 40px;
+}
+
+.column h3 {
+  font-size: 16px;
+  margin-bottom: 20px;
+  color: var(--foreground);
+}
+
+.column p, .column a {
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.6;
+  text-decoration: none;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.column a:hover {
+  color: var(--accent);
+}
+
+.bottom {
+  max-width: 1200px;
+  margin: 40px auto 0;
+  padding: 20px 20px 0;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.bottomLinks {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.bottomLinks a {
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.bottomLinks a:hover {
+  color: var(--accent);
+}
