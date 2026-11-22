@@ -38,7 +38,7 @@ jobs:
         run: |
           test -n "$DEPLOY_HOST"
           test -n "$DEPLOY_USER"
-          rsync -rltz \
+          rsync -rlz \
             -e 'ssh -i ~/.ssh/alira_deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes' \
             --exclude='.git/' \
             --exclude='.github/' \
