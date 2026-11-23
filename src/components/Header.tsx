@@ -45,8 +45,7 @@ export const Header: React.FC<{ data?: HeaderData }> = ({ data }) => {
           <Link href="/services/verification" onClick={closeMenu}>Поверка</Link>
           <Link href="/services/gosreestr" onClick={closeMenu}>Испытания</Link>
           <Link href="/registry" onClick={closeMenu}>Госреестр</Link>
-          <Link href="/catalog" className={styles.supplyLink} onClick={closeMenu}>Поставка оборудования</Link>
-          <Link href="/services" onClick={closeMenu}>Все услуги</Link>
+          <Link href="/catalog" className={styles.supplyLink} onClick={closeMenu}>Поставка СИ</Link>
           <Link href="/about" onClick={closeMenu}>О компании</Link>
 
           <div className={styles.mobileActions}>
