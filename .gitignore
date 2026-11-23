@@ -1,6 +1,10 @@
 # Local build artifacts and dependencies
 node_modules/
 .next/
+.next-release-*/
+.next-legacy-*/
+.next-swap-*
+.next-rollback-*
 out/
 .turbo/
 .deploy-key-tmp/

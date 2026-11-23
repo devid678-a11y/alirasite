@@ -73,4 +73,76 @@ jobs:
             -o IdentitiesOnly=yes \
             -o StrictHostKeyChecking=yes \
             "$DEPLOY_USER@$DEPLOY_HOST" \
-            'cd /var/www/alira && npm install --package-lock-only --ignore-scripts --no-audit --no-fund && npm ci && npm run build && sudo -n /usr/local/sbin/alira-pm2-restart && i=0; while [ "$i" -lt 30 ]; do if curl --fail --silent --max-time 5 http://127.0.0.1:3000/ >/dev/null; then exit 0; fi; i=$((i + 1)); sleep 2; done; echo 'Site did not become healthy on port 3000' >&2; exit 1'
+            bash -s -- "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" <<'REMOTE'
+          set -euo pipefail
+
+          build_id="${1:?missing build id}"
+          build_dir=".next-release-${build_id}"
+          legacy_dir=".next-legacy-${build_id}"
+          swap_link=".next-swap-${build_id}"
+          rollback_link=".next-rollback-${build_id}"
+
+          cd /var/www/alira
+
+          # The old Next process runs as root. Build into an isolated directory so it
+          # cannot write into the files currently used by the live process.
+          if [ -d .next ] && [ ! -L .next ]; then
+            owner="$(stat -c '%U' .next)"
+            deploy_user="$(id -un)"
+            if [ "$owner" != "$deploy_user" ]; then
+              echo "Cannot switch .next: directory owner is $owner, deployment user is $deploy_user" >&2
+              exit 1
+            fi
+          fi
+          if [ -e "$build_dir" ]; then
+            echo "Build directory already exists: $build_dir" >&2
+            exit 1
+          fi
+
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          npm ci
+          NEXT_DIST_DIR="$build_dir" npm run build
+          test -f "$build_dir/standalone/server.js"
+
+          previous_target=""
+          if [ -L .next ]; then
+            previous_target="$(readlink .next)"
+            ln -s "$build_dir" "$swap_link"
+            mv -Tf "$swap_link" .next
+          elif [ -e .next ]; then
+            mv .next "$legacy_dir"
+            previous_target="$legacy_dir"
+            ln -s "$build_dir" .next
+          else
+            ln -s "$build_dir" .next
+          fi
+
+          restore_previous() {
+            if [ -n "$previous_target" ]; then
+              ln -s "$previous_target" "$rollback_link"
+              mv -Tf "$rollback_link" .next
+              sudo -n /usr/local/sbin/alira-pm2-restart || true
+            fi
+          }
+
+          if ! sudo -n /usr/local/sbin/alira-pm2-restart; then
+            echo "PM2 restart failed; restoring previous build" >&2
+            restore_previous
+            exit 1
+          fi
+
+          healthy=0
+          for i in $(seq 1 30); do
+            if curl --fail --silent --max-time 5 http://127.0.0.1:3000/ >/dev/null; then
+              healthy=1
+              break
+            fi
+            sleep 2
+          done
+
+          if [ "$healthy" -ne 1 ]; then
+            echo "Site did not become healthy on port 3000; restoring previous build" >&2
+            restore_previous
+            exit 1
+          fi
+          REMOTE

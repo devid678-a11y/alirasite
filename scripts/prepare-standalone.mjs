@@ -2,12 +2,14 @@ import { cp, mkdir, readdir, rm, symlink } from "node:fs/promises";
 import path from "node:path";
 
 const projectRoot = process.cwd();
-const standaloneRoot = path.join(projectRoot, ".next", "standalone");
+const distDir = process.env.NEXT_DIST_DIR || ".next";
+const distRoot = path.join(projectRoot, distDir);
+const standaloneRoot = path.join(distRoot, "standalone");
 const publicRoot = path.join(projectRoot, "public");
 const standalonePublicRoot = path.join(standaloneRoot, "public");
 const standaloneUploads = path.join(standalonePublicRoot, "uploads");
 const uploadsRoot = path.join(publicRoot, "uploads");
-const staticRoot = path.join(projectRoot, ".next", "static");
+const staticRoot = path.join(distRoot, "static");
 const standaloneStaticRoot = path.join(standaloneRoot, ".next", "static");
 
 await rm(standaloneStaticRoot, { recursive: true, force: true });

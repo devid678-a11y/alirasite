@@ -65,3 +65,8 @@ visudo -cf /etc/sudoers.d/alira-deploy
 Do not grant `alira-deploy` unrestricted sudo. Confirm it can run `npm ci`, `npm run build`, and `sudo -n /usr/local/sbin/alira-pm2-restart`. The workflow uses `/var/www/alira`, PM2 process `alira-cert`, and health-check port `3000`.
 
 The standalone build links `public/uploads/` back to the persistent upload directory instead of duplicating its multi-gigabyte contents under `.next/standalone`.
+
+
+## Isolated production builds
+
+The application process runs as root while GitHub Actions builds as `alira-deploy`. Production builds therefore use a fresh `.next-release-<run-id>` directory and switch the `.next` symlink only after the build succeeds. Older build directories are retained for rollback and may be removed later by root when space is needed.
