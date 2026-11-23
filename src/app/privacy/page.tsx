@@ -1,6 +1,14 @@
 import React from "react";
 import styles from "./page.module.css";
 
+export const metadata = {
+  "title": "Политика конфиденциальности",
+  "description": "Политика обработки и защиты персональных данных пользователей сайта ООО «Алира».",
+  "alternates": {
+    "canonical": "/privacy"
+  }
+};
+
 export default function PrivacyPolicy() {
   return (
     <div className={styles.page}>

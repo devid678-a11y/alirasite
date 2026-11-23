@@ -4,6 +4,7 @@ import Image from "next/image";
 import { CheckCircle2, Clock } from "lucide-react";
 import styles from "./ProductCard.module.css";
 import categoriesData from "@/data/categories.json";
+import { canonicalCatalogSegment, getCanonicalCategoryPath } from "@/app/catalog/catalog-utils";
 
 interface ProductCardProps {
   product: {
@@ -26,24 +27,12 @@ interface ProductCardProps {
 function getProductPath(categoryId: string | undefined, fallbackCategory: string | undefined): string {
   const targetId = categoryId || fallbackCategory;
   if (!targetId) return "uncategorized";
-  
-  const pathParts: string[] = [];
-  let current = (categoriesData as any[]).find((c: any) => c.id === targetId);
-  
-  while (current) {
-    pathParts.unshift(current.id);
-    current = (categoriesData as any[]).find((c: any) => c.id === current.parentId);
-  }
-  
-  if (pathParts.length === 0) {
-    return targetId;
-  }
-  return pathParts.join("/");
+  return getCanonicalCategoryPath(targetId, categoriesData as any[]) || canonicalCatalogSegment(targetId);
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const productPath = getProductPath(product.categoryId, product.category);
-  const productHref = `/catalog/${productPath}/${product.id}`;
+  const productHref = `/catalog/${productPath}/${canonicalCatalogSegment(String(product.id))}`;
   
   // Only display brand if it exists and is not "unknown"
   const hasValidBrand = Boolean(

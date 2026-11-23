@@ -4,8 +4,9 @@ import { AboutGallery } from "@/components/AboutGallery";
 import styles from "./about.module.css";
 
 export const metadata = {
-  title: "О компании | ООО «Алира»",
+  title: "О компании",
   description: "Независимая экспертная организация «Алира». Комплексное метрологическое обеспечение предприятий, поставка, поверка и утверждение типа средств измерений.",
+  alternates: { canonical: "/about" },
 };
 
 export default async function AboutPage() {

@@ -6,6 +6,7 @@ import styles from "./page.module.css";
 import { getPagesData, getProducts } from "@/app/actions/cms";
 import SearchBar from "./SearchBar";
 import { ProductCard } from "@/components/ProductCard";
+import { canonicalCatalogSegment } from "./catalog-utils";
 
 function resolveCategoryImage(catId: string, categories: any[], products: any[]): string {
   const getDescendantIds = (id: string): string[] => {
@@ -48,8 +49,9 @@ async function getRootCategories() {
 }
 
 export const metadata = {
-  title: "Метрологическое оборудование. Оснащение лабораторий — ООО «Алира»",
+  title: "Метрологическое оборудование. Оснащение лабораторий",
   description: "Метрологическое оборудование и оснащение лабораторий. Поставка измерительных приборов от компании ООО «Алира».",
+  alternates: { canonical: "/catalog" },
 };
 
 export default async function CatalogIndex({
@@ -121,7 +123,7 @@ export default async function CatalogIndex({
             {rootCategories.map((cat: any) => {
               const catImage = resolveCategoryImage(cat.id, allCategories, allProducts);
               return (
-                <Link key={cat.id} href={`/catalog/${cat.id}`} className={styles.subCatCard}>
+                <Link key={cat.id} href={`/catalog/${canonicalCatalogSegment(String(cat.id))}`} className={styles.subCatCard}>
                   <div className={styles.subCatImageWrapper}>
                     <img src={catImage} alt={cat.name} className={styles.subCatImage} />
                   </div>

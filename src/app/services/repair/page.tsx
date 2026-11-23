@@ -4,8 +4,9 @@ import Link from "next/link";
 import RepairClient from "./RepairClient";
 
 export const metadata: Metadata = {
-  title: "Ремонт и сервисное обслуживание измерительного оборудования — ООО «Алира»",
+  title: "Ремонт и сервисное обслуживание измерительного оборудования",
   description: "Профессиональный компонентный и блочный ремонт сложной измерительной техники, ВЧ/СВЧ приборов (до 50 ГГц) и средств связи зарубежного производства. Предварительная диагностика, гарантия от 6 месяцев, первичная поверка (ФГИС «АРШИН»).",
+  alternates: { canonical: "/services/repair" },
 };
 
 export default function RepairPage() {

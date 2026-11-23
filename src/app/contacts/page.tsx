@@ -1,6 +1,14 @@
 import React from "react";
 import { getPagesData } from "@/app/actions/cms";
 
+export const metadata = {
+  "title": "Контакты метрологической лаборатории в Москве",
+  "description": "Контакты ООО «Алира»: адрес метрологической лаборатории в Москве, телефон, электронная почта и способы передать оборудование на поверку.",
+  "alternates": {
+    "canonical": "/contacts"
+  }
+};
+
 export default async function ContactsPage() {
   const pagesData = await getPagesData();
   const data = pagesData.contacts || {};

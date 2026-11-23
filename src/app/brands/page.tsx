@@ -2,6 +2,14 @@ import React from "react";
 import brands from "@/data/brands.json";
 import styles from "./page.module.css";
 
+export const metadata = {
+  "title": "Бренды измерительного оборудования",
+  "description": "Производители и бренды измерительного оборудования, которое поставляет, обслуживает и сопровождает компания «Алира».",
+  "alternates": {
+    "canonical": "/brands"
+  }
+};
+
 export default function BrandsPage() {
   return (
     <div className={styles.page}>

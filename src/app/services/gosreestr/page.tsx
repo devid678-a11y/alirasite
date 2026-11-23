@@ -4,8 +4,9 @@ import ServiceLanding from "../ServiceLanding";
 import { getPagesData, getDocs } from "@/app/actions/cms";
 
 export const metadata = {
-  title: "Испытания СИ для утверждения типа и внесения в ГРСИ — Алира",
+  title: "Испытания СИ для утверждения типа и внесения в ГРСИ",
   description: "Обсудим испытания средств измерений для утверждения типа. Уточним модификации, исходные документы и состав работ до начала процедуры.",
+  alternates: { canonical: "/services/gosreestr" },
 };
 
 export default async function GosreestrPage() {

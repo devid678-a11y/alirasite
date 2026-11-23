@@ -4,8 +4,9 @@ import ServiceLanding from "../ServiceLanding";
 import { getPagesData, getDocs } from "@/app/actions/cms";
 
 export const metadata = {
-  title: "Поверка средств измерений в Москве — ООО «Алира»",
+  title: "Поверка средств измерений в Москве",
   description: "Проводим поверку широкого спектра средств измерений для предприятий и организаций. Поможем определить возможность поверки, рассчитаем стоимость и сроки, внесем сведения во ФГИС «АРШИН».",
+  alternates: { canonical: "/services/verification" },
 };
 
 export default async function VerificationPage() {

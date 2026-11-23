@@ -5,6 +5,7 @@ import { ContactForm } from "@/components/ContactForm";
 export const metadata: Metadata = {
   title: "Запрос коммерческого предложения",
   description: "Запросить коммерческое предложение на измерительное оборудование и услуги поверки.",
+  alternates: { canonical: "/request-quote" },
 };
 
 export default function RequestQuotePage() {

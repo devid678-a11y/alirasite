@@ -1,4 +1,5 @@
 import React from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronRight } from "lucide-react";
@@ -7,6 +8,8 @@ import path from "path";
 import { ProductCard } from "@/components/ProductCard";
 import ProductDetailClient from "../[category]/[id]/ProductDetailClient";
 import styles from "./page.module.css";
+import { canonicalCatalogSegment } from "../catalog-utils";
+import { getProducts as getCmsProducts, getDocs as getCmsDocs } from "@/app/actions/cms";
 
 
 function resolveCategoryImage(catId: string, categories: any[], products: any[]): string {
@@ -48,22 +51,43 @@ async function getCategories() {
   }
 }
 
-async function getProducts() {
-  try {
-    const fileData = await fs.readFile(path.join(process.cwd(), "src", "data", "products.json"), "utf-8");
-    return JSON.parse(fileData);
-  } catch (e) {
-    return [];
-  }
+function shortenDescription(value: unknown, fallback: string): string {
+  const text = String(value || fallback).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  if (text.length <= 160) return text;
+  const shortened = text.slice(0, 157).replace(/\s+\S*$/, "");
+  return `${shortened}…`;
 }
 
-async function getDocs() {
-  try {
-    const fileData = await fs.readFile(path.join(process.cwd(), "src", "data", "docs.json"), "utf-8");
-    return JSON.parse(fileData);
-  } catch (e) {
-    return [];
+export async function generateMetadata({ params }: { params: Promise<{ slug: string[] }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const lastSlugPart = canonicalCatalogSegment(slug[slug.length - 1] || "");
+  const [categories, products] = await Promise.all([getCategories(), getCmsProducts()]);
+  const canonical = `/catalog/${slug.map(canonicalCatalogSegment).join("/")}`;
+
+  const product = products.find((item: any) => canonicalCatalogSegment(String(item.id || "")) === lastSlugPart);
+  if (product) {
+    const brand = product.brand && String(product.brand).toLowerCase() !== "unknown" ? ` — ${product.brand}` : "";
+    return {
+      title: `${product.name || "Средство измерений"}${brand} — характеристики и поставка`,
+      description: shortenDescription(product.description, `Характеристики и поставка средства измерений ${product.name || ""}${brand}. Запросите стоимость и срок у ООО «Алира».`),
+      alternates: { canonical },
+    };
   }
+
+  const category = categories.find((item: any) => canonicalCatalogSegment(String(item.id || "")) === lastSlugPart);
+  if (category) {
+    return {
+      title: `${category.name} — каталог измерительного оборудования`,
+      description: shortenDescription(category.description, `Каталог «${category.name}»: подбор и поставка измерительного оборудования. Уточните характеристики, стоимость и сроки у ООО «Алира».`),
+      alternates: { canonical },
+    };
+  }
+
+  return {
+    title: "Страница каталога не найдена",
+    description: "Каталог измерительного оборудования ООО «Алира».",
+    robots: { index: false, follow: true },
+  };
 }
 
 export default async function CatalogSlugPage({ params }: { params: Promise<{ slug: string[] }> }) {
@@ -73,12 +97,12 @@ export default async function CatalogSlugPage({ params }: { params: Promise<{ sl
   const lastSlugPart = slug[slug.length - 1];
   
   const categories = await getCategories();
-  const products = await getProducts();
-  const allDocs = await getDocs();
+  const products = await getCmsProducts();
+  const allDocs = await getCmsDocs();
   
   // 1. Is this a Product Page?
   // We identify a product page if the last slug part matches a product ID
-  const product = products.find((p: any) => p.id === lastSlugPart);
+  const product = products.find((p: any) => canonicalCatalogSegment(String(p.id || "")) === canonicalCatalogSegment(lastSlugPart));
   
   if (product) {
     // Render product detail
@@ -98,7 +122,7 @@ export default async function CatalogSlugPage({ params }: { params: Promise<{ sl
     
     let builtPath = "/catalog";
     for (const c of catPath) {
-      builtPath += `/${c.id}`;
+      builtPath += `/${canonicalCatalogSegment(String(c.id))}`;
       breadcrumbs.push({ title: c.name, href: builtPath });
     }
     breadcrumbs.push({ title: product.name, href: "#" });
@@ -164,7 +188,7 @@ export default async function CatalogSlugPage({ params }: { params: Promise<{ sl
   }
 
   // 2. Is this a Category Page?
-  const category = categories.find((c: any) => c.id === lastSlugPart);
+  const category = categories.find((c: any) => canonicalCatalogSegment(String(c.id || "")) === canonicalCatalogSegment(lastSlugPart));
   
   if (!category) {
     notFound();
@@ -219,7 +243,7 @@ export default async function CatalogSlugPage({ params }: { params: Promise<{ sl
         "itemListElement": categoryProducts.slice(0, 30).map((p: any, idx: number) => ({
           "@type": "ListItem",
           "position": idx + 1,
-          "url": `https://xn--80aapko5acgl.xn--p1ai${builtPath}/${p.id}`,
+          "url": `https://xn--80aapko5acgl.xn--p1ai${builtPath}/${canonicalCatalogSegment(String(p.id))}`,
           "name": p.name
         }))
       }
@@ -253,7 +277,7 @@ export default async function CatalogSlugPage({ params }: { params: Promise<{ sl
             {subCategories.map((sub: any) => {
               const catImage = resolveCategoryImage(sub.id, categories, products);
               return (
-                <Link key={sub.id} href={`${builtPath}/${sub.id}`} className={styles.subCatCard}>
+                <Link key={sub.id} href={`${builtPath}/${canonicalCatalogSegment(String(sub.id))}`} className={styles.subCatCard}>
                   <div className={styles.subCatImageWrapper}>
                     <img src={catImage} alt={sub.name} className={styles.subCatImage} />
                   </div>

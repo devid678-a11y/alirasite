@@ -1,6 +1,14 @@
 import React from "react";
 import styles from "../privacy/page.module.css"; // Reuse the same styles
 
+export const metadata = {
+  "title": "Согласие на обработку персональных данных",
+  "description": "Условия согласия пользователя на обработку персональных данных при отправке заявки на сайте ООО «Алира».",
+  "alternates": {
+    "canonical": "/agreement"
+  }
+};
+
 export default function AgreementPage() {
   return (
     <div className={styles.page}>

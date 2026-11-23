@@ -1,19 +1,10 @@
 import { MetadataRoute } from "next";
 import { getProducts } from "@/app/actions/cms";
+import { canonicalCatalogSegment, getCanonicalCategoryPath } from "./catalog/catalog-utils";
 import fs from "fs/promises";
 import path from "path";
 
-function getCategoryPath(catId: string, categories: any[]): string {
-  const pathParts: string[] = [];
-  let current = categories.find((c: any) => c.id === catId);
-  
-  while (current) {
-    pathParts.unshift(current.id);
-    current = categories.find((c: any) => c.id === current.parentId);
-  }
-  
-  return pathParts.join("/");
-}
+const getCategoryPath = getCanonicalCategoryPath;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://xn--80aapko5acgl.xn--p1ai"; // алирасерт.рф
@@ -64,12 +55,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let productRoutes: MetadataRoute.Sitemap = [];
   try {
     const products = await getProducts();
-    productRoutes = products.map((p: any) => {
-      const targetCategoryId = p.categoryId || p.category;
-      const catPath = targetCategoryId ? getCategoryPath(targetCategoryId, categories) : "uncategorized";
+    productRoutes = products.filter((p: any) => p?.id).map((p: any) => {
+      const rawCategory = p.categoryId || p.category;
+      const targetCategoryId = typeof rawCategory === "string" ? rawCategory : rawCategory?.id || rawCategory?.uid || rawCategory?.documentId;
+      const catPath = targetCategoryId ? getCategoryPath(String(targetCategoryId), categories) : "";
+      const productPath = [catPath, canonicalCatalogSegment(String(p.id || ""))].filter(Boolean).join("/");
       
       return {
-        url: `${baseUrl}/catalog/${catPath}/${p.id}`,
+        url: `${baseUrl}/catalog/${productPath}`,
         lastModified: new Date(),
         changeFrequency: "weekly" as const,
         priority: 0.7,
