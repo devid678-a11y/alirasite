@@ -1,6 +1,8 @@
 name: Deploy production
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -81,6 +83,22 @@ jobs:
           rollback_link=".next-rollback-${build_id}"
 
           cd /var/www/alira
+
+          # Remove inactive release directories before building to recover disk space.
+          # Preserve the build currently linked as .next so the live process stays untouched.
+          active_build=""
+          if [ -L .next ]; then
+            active_build="$(readlink -f .next || true)"
+          fi
+          for stale_build in .next-release-* .next-legacy-*; do
+            [ -e "$stale_build" ] || [ -L "$stale_build" ] || continue
+            stale_real="$(readlink -f "$stale_build" || true)"
+            if [ -n "$active_build" ] && [ "$stale_real" = "$active_build" ]; then
+              continue
+            fi
+            echo "Removing inactive build $stale_build"
+            rm -rf -- "$stale_build"
+          done
 
           # The old Next process runs as root. Build into an isolated directory so it
           # cannot write into the files currently used by the live process.
