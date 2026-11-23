@@ -38,8 +38,8 @@ export default function Home() {
           </div>
 
           <div className={s.scope} aria-label="Основные направления">
-            <span>ОПТИЧЕСКИЕ СИ</span>
-            <span>РАДИОЧАСТОТНЫЕ СИ</span>
+            <span>ПОВЕРКА</span>
+            <span>ПОСТАВКА</span>
             <span>УТВЕРЖДЕНИЕ ТИПА</span>
           </div>
         </section>
