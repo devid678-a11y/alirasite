@@ -11,6 +11,11 @@ const DOCS_FILE = "./src/data/docs.json";
 const PAGES_FILE = "./src/data/pages.json";
 const SUBMISSIONS_FILE = "./src/data/submissions.json";
 
+const DATA_CACHE_TTL_MS = 60_000;
+type DataCacheEntry<T> = { expiresAt: number; promise: Promise<T> };
+let productsCache: DataCacheEntry<any[]> | undefined;
+let docsCache: DataCacheEntry<any[]> | undefined;
+
 async function fetchFromStrapi(endpoint: string) {
     try {
         const res = await fetch(`${STRAPI_URL}/api/${endpoint}?pagination[limit]=10000`, { next: { revalidate: 60 } });
@@ -26,16 +31,25 @@ async function fetchFromStrapi(endpoint: string) {
 }
 
 export async function getProducts() {
-    const fromStrapi = await fetchFromStrapi('products');
-    if (fromStrapi && fromStrapi.length > 0) {
-        return fromStrapi;
+    if (productsCache && productsCache.expiresAt > Date.now()) {
+        return productsCache.promise;
     }
-    try {
-        const fileData = await fs.readFile(path.join(process.cwd(), "src", "data", "products.json"), "utf-8");
-        return JSON.parse(fileData);
-    } catch (err) {
-        return [];
-    }
+
+    const promise = (async () => {
+        const fromStrapi = await fetchFromStrapi('products');
+        if (fromStrapi && fromStrapi.length > 0) {
+            return fromStrapi;
+        }
+        try {
+            const fileData = await fs.readFile(path.join(process.cwd(), "src", "data", "products.json"), "utf-8");
+            return JSON.parse(fileData);
+        } catch (err) {
+            return [];
+        }
+    })();
+
+    productsCache = { expiresAt: Date.now() + DATA_CACHE_TTL_MS, promise };
+    return promise;
 }
 
 export async function saveProduct(updatedProduct: any) {
@@ -52,6 +66,7 @@ export async function saveProduct(updatedProduct: any) {
   }
 
   await fs.writeFile(PRODUCTS_FILE, JSON.stringify(products, null, 2), "utf-8");
+  productsCache = { expiresAt: Date.now() + DATA_CACHE_TTL_MS, promise: Promise.resolve(products) };
   revalidatePath("/");
   revalidatePath("/catalog");
   
@@ -67,6 +82,7 @@ export async function deleteProduct(id: string) {
   const products = await getProducts();
   const filtered = products.filter((p: any) => p.id !== id);
   await fs.writeFile(PRODUCTS_FILE, JSON.stringify(filtered, null, 2), "utf-8");
+  productsCache = { expiresAt: Date.now() + DATA_CACHE_TTL_MS, promise: Promise.resolve(filtered) };
   revalidatePath("/");
   revalidatePath("/catalog");
 
@@ -116,16 +132,25 @@ export async function deleteBrand(id: string) {
 }
 
 export async function getDocs() {
-    const fromStrapi = await fetchFromStrapi('docs');
-    if (fromStrapi && fromStrapi.length > 0) {
-        return fromStrapi;
+    if (docsCache && docsCache.expiresAt > Date.now()) {
+        return docsCache.promise;
     }
-    try {
-        const fileData = await fs.readFile(path.join(process.cwd(), "src", "data", "docs.json"), "utf-8");
-        return JSON.parse(fileData);
-    } catch (err) {
-        return [];
-    }
+
+    const promise = (async () => {
+        const fromStrapi = await fetchFromStrapi('docs');
+        if (fromStrapi && fromStrapi.length > 0) {
+            return fromStrapi;
+        }
+        try {
+            const fileData = await fs.readFile(path.join(process.cwd(), "src", "data", "docs.json"), "utf-8");
+            return JSON.parse(fileData);
+        } catch (err) {
+            return [];
+        }
+    })();
+
+    docsCache = { expiresAt: Date.now() + DATA_CACHE_TTL_MS, promise };
+    return promise;
 }
 
 export async function saveDoc(updatedDoc: any) {
@@ -142,6 +167,7 @@ export async function saveDoc(updatedDoc: any) {
   }
 
   await fs.writeFile(DOCS_FILE, JSON.stringify(docs, null, 2), "utf-8");
+  docsCache = { expiresAt: Date.now() + DATA_CACHE_TTL_MS, promise: Promise.resolve(docs) };
   revalidatePath("/");
   revalidatePath("/services");
   return { success: true };
@@ -151,6 +177,7 @@ export async function deleteDoc(id: string) {
   const docs = await getDocs();
   const filtered = docs.filter((d: any) => d.id !== id);
   await fs.writeFile(DOCS_FILE, JSON.stringify(filtered, null, 2), "utf-8");
+  docsCache = { expiresAt: Date.now() + DATA_CACHE_TTL_MS, promise: Promise.resolve(filtered) };
   revalidatePath("/");
   revalidatePath("/services");
   return { success: true };

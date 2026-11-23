@@ -3,12 +3,50 @@ import Link from "next/link";
 import fs from "fs/promises";
 import path from "path";
 import styles from "./page.module.css";
-import { getPagesData, getProducts } from "@/app/actions/cms";
+import { getProducts } from "@/app/actions/cms";
 import SearchBar from "./SearchBar";
 import { ProductCard } from "@/components/ProductCard";
 import { canonicalCatalogSegment } from "./catalog-utils";
 
+function isUsefulImage(image: unknown): boolean {
+  return typeof image === "string" && image.length > 0 &&
+    image !== "/product_placeholder.svg" && image !== "/product_placeholder.png";
+}
+
+function findCategoryImage(catId: string, categories: any[]): string | undefined {
+  const categoryById = new Map(categories.map((category: any) => [String(category.id), category]));
+  const childrenByParent = new Map<string, any[]>();
+  for (const category of categories) {
+    if (category.parentId) {
+      const parentId = String(category.parentId);
+      const children = childrenByParent.get(parentId) || [];
+      children.push(category);
+      childrenByParent.set(parentId, children);
+    }
+  }
+
+  const pending = [catId];
+  const visited = new Set<string>();
+  for (let index = 0; index < pending.length; index += 1) {
+    const id = pending[index];
+    if (visited.has(id)) continue;
+    visited.add(id);
+
+    const category = categoryById.get(id);
+    if (isUsefulImage(category?.image)) return category.image;
+
+    for (const child of childrenByParent.get(id) || []) {
+      pending.push(String(child.id));
+    }
+  }
+
+  return undefined;
+}
+
 function resolveCategoryImage(catId: string, categories: any[], products: any[]): string {
+  const categoryImage = findCategoryImage(catId, categories);
+  if (categoryImage) return categoryImage;
+
   const getDescendantIds = (id: string): string[] => {
     let ids = [id];
     const children = categories.filter((c: any) => c.parentId === id);
@@ -17,35 +55,16 @@ function resolveCategoryImage(catId: string, categories: any[], products: any[])
     }
     return ids;
   };
-  
-  const descendantIds = getDescendantIds(catId);
-  const productWithImage = products.find((p: any) => 
-    descendantIds.includes(p.categoryId) && 
-    p.image && 
-    p.image !== "/product_placeholder.svg" && 
+
+  const descendantIds = new Set(getDescendantIds(catId));
+  const productWithImage = products.find((p: any) =>
+    descendantIds.has(p.categoryId) &&
+    p.image &&
+    p.image !== "/product_placeholder.svg" &&
     p.image !== "/product_placeholder.png"
   );
 
-  if (productWithImage) {
-    return productWithImage.image;
-  }
-  
-  const category = categories.find((c: any) => c.id === catId);
-  if (category && category.image && category.image !== "/product_placeholder.svg" && category.image !== "/product_placeholder.png") {
-    return category.image;
-  }
-  
-  return "/product_placeholder.svg";
-}
-
-async function getRootCategories() {
-  try {
-    const fileData = await fs.readFile(path.join(process.cwd(), "src", "data", "categories.json"), "utf-8");
-    const categories = JSON.parse(fileData);
-    return categories.filter((c: any) => !c.parentId);
-  } catch (e) {
-    return [];
-  }
+  return productWithImage?.image || "/product_placeholder.svg";
 }
 
 export const metadata = {
@@ -62,13 +81,9 @@ export default async function CatalogIndex({
   const resolvedSearchParams = await searchParams;
   const query = resolvedSearchParams.q || "";
 
-  const pagesData = await getPagesData();
-  
-  // Read all categories and products to resolve images
   const fileData = await fs.readFile(path.join(process.cwd(), "src", "data", "categories.json"), "utf-8");
   const allCategories = JSON.parse(fileData);
-  const productsRes = await getProducts();
-  const allProducts = productsRes || [];
+  const allProducts = query.trim() ? (await getProducts()) || [] : [];
   
   const rootCategories = allCategories.filter((c: any) => !c.parentId);
 

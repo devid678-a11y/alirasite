@@ -8,11 +8,49 @@ import path from "path";
 import { ProductCard } from "@/components/ProductCard";
 import ProductDetailClient from "../[category]/[id]/ProductDetailClient";
 import styles from "./page.module.css";
-import { canonicalCatalogSegment } from "../catalog-utils";
+import { canonicalCatalogSegment, getCanonicalCategoryPath } from "../catalog-utils";
 import { getProducts as getCmsProducts, getDocs as getCmsDocs } from "@/app/actions/cms";
 
 
+function isUsefulImage(image: unknown): boolean {
+  return typeof image === "string" && image.length > 0 &&
+    image !== "/product_placeholder.svg" && image !== "/product_placeholder.png";
+}
+
+function findCategoryImage(catId: string, categories: any[]): string | undefined {
+  const categoryById = new Map(categories.map((category: any) => [String(category.id), category]));
+  const childrenByParent = new Map<string, any[]>();
+  for (const category of categories) {
+    if (category.parentId) {
+      const parentId = String(category.parentId);
+      const children = childrenByParent.get(parentId) || [];
+      children.push(category);
+      childrenByParent.set(parentId, children);
+    }
+  }
+
+  const pending = [catId];
+  const visited = new Set<string>();
+  for (let index = 0; index < pending.length; index += 1) {
+    const id = pending[index];
+    if (visited.has(id)) continue;
+    visited.add(id);
+
+    const category = categoryById.get(id);
+    if (isUsefulImage(category?.image)) return category.image;
+
+    for (const child of childrenByParent.get(id) || []) {
+      pending.push(String(child.id));
+    }
+  }
+
+  return undefined;
+}
+
 function resolveCategoryImage(catId: string, categories: any[], products: any[]): string {
+  const categoryImage = findCategoryImage(catId, categories);
+  if (categoryImage) return categoryImage;
+
   const getDescendantIds = (id: string): string[] => {
     let ids = [id];
     const children = categories.filter((c: any) => c.parentId === id);
@@ -21,27 +59,25 @@ function resolveCategoryImage(catId: string, categories: any[], products: any[])
     }
     return ids;
   };
-  
-  const descendantIds = getDescendantIds(catId);
-  const productWithImage = products.find((p: any) => 
-    descendantIds.includes(p.categoryId) && 
-    p.image && 
-    p.image !== "/product_placeholder.svg" && 
+
+  const descendantIds = new Set(getDescendantIds(catId));
+  const productWithImage = products.find((p: any) =>
+    descendantIds.has(p.categoryId) &&
+    p.image &&
+    p.image !== "/product_placeholder.svg" &&
     p.image !== "/product_placeholder.png"
   );
 
-  if (productWithImage) {
-    return productWithImage.image;
-  }
-  
-  const category = categories.find((c: any) => c.id === catId);
-  if (category && category.image && category.image !== "/product_placeholder.svg" && category.image !== "/product_placeholder.png") {
-    return category.image;
-  }
-  
-  return "/product_placeholder.svg";
+  return productWithImage?.image || "/product_placeholder.svg";
 }
 
+
+function findCategoryForSlug(slug: string[], categories: any[]): any | undefined {
+  const requestedPath = slug.map(canonicalCatalogSegment).join("/");
+  return categories.find((item: any) =>
+    getCanonicalCategoryPath(String(item.id || ""), categories) === requestedPath
+  );
+}
 async function getCategories() {
   try {
     const fileData = await fs.readFile(path.join(process.cwd(), "src", "data", "categories.json"), "utf-8");
@@ -61,9 +97,27 @@ function shortenDescription(value: unknown, fallback: string): string {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string[] }> }): Promise<Metadata> {
   const { slug } = await params;
   const lastSlugPart = canonicalCatalogSegment(slug[slug.length - 1] || "");
-  const [categories, products] = await Promise.all([getCategories(), getCmsProducts()]);
+  const [categories] = await Promise.all([getCategories()]);
   const canonical = `/catalog/${slug.map(canonicalCatalogSegment).join("/")}`;
 
+  const category = findCategoryForSlug(slug, categories);
+  if (category) {
+    const title = `${category.name} — каталог измерительного оборудования`;
+    const description = shortenDescription(
+      category.description,
+      `Каталог «${category.name}»: подбор и поставка измерительного оборудования. Уточните характеристики, стоимость и сроки у ООО «Алира».`,
+    );
+
+    return {
+      title,
+      description,
+      alternates: { canonical },
+      openGraph: { title, description, url: canonical },
+      twitter: { title, description },
+    };
+  }
+
+  const products = await getCmsProducts();
   const product = products.find((item: any) => canonicalCatalogSegment(String(item.id || "")) === lastSlugPart);
   if (product) {
     const productName = String(product.name || "Средство измерений");
@@ -87,30 +141,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     };
   }
 
-  const category = categories.find((item: any) => canonicalCatalogSegment(String(item.id || "")) === lastSlugPart);
-  if (category) {
-    const title = `${category.name} — каталог измерительного оборудования`;
-    const description = shortenDescription(
-      category.description,
-      `Каталог «${category.name}»: подбор и поставка измерительного оборудования. Уточните характеристики, стоимость и сроки у ООО «Алира».`,
-    );
-
-    return {
-      title,
-      description,
-      alternates: { canonical },
-      openGraph: { title, description, url: canonical },
-      twitter: { title, description },
-    };
-  }
-
   return {
     title: "Страница каталога не найдена",
     description: "Каталог измерительного оборудования ООО «Алира».",
     robots: { index: false, follow: true },
   };
 }
-
 export default async function CatalogSlugPage({ params }: { params: Promise<{ slug: string[] }> }) {
   const resolvedParams = await params;
   const { slug } = resolvedParams;
@@ -118,12 +154,25 @@ export default async function CatalogSlugPage({ params }: { params: Promise<{ sl
   const lastSlugPart = slug[slug.length - 1];
   
   const categories = await getCategories();
-  const products = await getCmsProducts();
-  const allDocs = await getCmsDocs();
-  
-  // 1. Is this a Product Page?
-  // We identify a product page if the last slug part matches a product ID
-  const product = products.find((p: any) => canonicalCatalogSegment(String(p.id || "")) === canonicalCatalogSegment(lastSlugPart));
+  const categoryCandidate = findCategoryForSlug(slug, categories);
+  let products: any[] = [];
+  let allDocs: any[] = [];
+  let product: any = null;
+
+  if (categoryCandidate) {
+    const subCategories = categories.filter((c: any) => c.parentId === categoryCandidate.id);
+    const needsProductImages = subCategories.some((category: any) => !findCategoryImage(String(category.id), categories));
+    if (subCategories.length === 0 || needsProductImages) {
+      products = (await getCmsProducts()) || [];
+    }
+  } else {
+    [products, allDocs] = await Promise.all([getCmsProducts(), getCmsDocs()]);
+    product = products.find((p: any) =>
+      canonicalCatalogSegment(String(p.id || "")) === canonicalCatalogSegment(lastSlugPart)
+    );
+  }
+
+  // Product pages need product and document data; category pages avoid loading documents.
   
   if (product) {
     // Render product detail
@@ -209,7 +258,7 @@ export default async function CatalogSlugPage({ params }: { params: Promise<{ sl
   }
 
   // 2. Is this a Category Page?
-  const category = categories.find((c: any) => canonicalCatalogSegment(String(c.id || "")) === canonicalCatalogSegment(lastSlugPart));
+  const category = categoryCandidate;
   
   if (!category) {
     notFound();
@@ -228,8 +277,8 @@ export default async function CatalogSlugPage({ params }: { params: Promise<{ sl
     return ids;
   };
   
-  const validCategoryIds = getDescendantIds(category.id);
-  const categoryProducts = products.filter((p: any) => validCategoryIds.includes(p.categoryId));
+  const validCategoryIds = new Set(getDescendantIds(category.id));
+  const categoryProducts = products.filter((p: any) => validCategoryIds.has(p.categoryId));
 
   // Build breadcrumbs for category
   const breadcrumbs = [{ title: "Каталог", href: "/catalog" }];
