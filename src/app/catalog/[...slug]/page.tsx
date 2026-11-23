@@ -66,20 +66,41 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
   const product = products.find((item: any) => canonicalCatalogSegment(String(item.id || "")) === lastSlugPart);
   if (product) {
-    const brand = product.brand && String(product.brand).toLowerCase() !== "unknown" ? ` — ${product.brand}` : "";
+    const productName = String(product.name || "Средство измерений");
+    const brandName = String(product.brand || "").trim();
+    const brandSuffix =
+      brandName && brandName.toLowerCase() !== "unknown" && !productName.toLowerCase().includes(brandName.toLowerCase())
+        ? ` — ${brandName}`
+        : "";
+    const title = `${productName}${brandSuffix} — характеристики и поставка`;
+    const description = shortenDescription(
+      product.description,
+      `Характеристики и поставка средства измерений ${productName}. Запросите стоимость и срок у ООО «Алира».`,
+    );
+
     return {
-      title: `${product.name || "Средство измерений"}${brand} — характеристики и поставка`,
-      description: shortenDescription(product.description, `Характеристики и поставка средства измерений ${product.name || ""}${brand}. Запросите стоимость и срок у ООО «Алира».`),
+      title,
+      description,
       alternates: { canonical },
+      openGraph: { title, description, url: canonical },
+      twitter: { title, description },
     };
   }
 
   const category = categories.find((item: any) => canonicalCatalogSegment(String(item.id || "")) === lastSlugPart);
   if (category) {
+    const title = `${category.name} — каталог измерительного оборудования`;
+    const description = shortenDescription(
+      category.description,
+      `Каталог «${category.name}»: подбор и поставка измерительного оборудования. Уточните характеристики, стоимость и сроки у ООО «Алира».`,
+    );
+
     return {
-      title: `${category.name} — каталог измерительного оборудования`,
-      description: shortenDescription(category.description, `Каталог «${category.name}»: подбор и поставка измерительного оборудования. Уточните характеристики, стоимость и сроки у ООО «Алира».`),
+      title,
+      description,
       alternates: { canonical },
+      openGraph: { title, description, url: canonical },
+      twitter: { title, description },
     };
   }
 
