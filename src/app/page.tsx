@@ -8,7 +8,6 @@ import {
   Wrench,
 } from "lucide-react";
 import HomeInstrumentListForm from "@/components/HomeInstrumentListForm";
-import { CaliperSvg } from "@/components/CaliperSvg";
 import s from "./home.module.css";
 
 const steps = [
@@ -22,7 +21,6 @@ export default function Home() {
     <main className={s.page}>
       <div className={s.container}>
         <section className={s.hero} aria-labelledby="home-title">
-          <CaliperSvg className={s.caliperBg} aria-hidden="true" />
           <div className={s.heroContent}>
             <p className={s.eyebrow}><span aria-hidden="true" /> АЛИРА · МЕТРОЛОГИЧЕСКИЕ УСЛУГИ ДЛЯ ПРЕДПРИЯТИЙ</p>
             <h1 id="home-title">Поверка и испытания средств измерений</h1>
