@@ -224,7 +224,7 @@ export async function savePageData(pageName: string, data: any) {
 import nodemailer from "nodemailer";
 
 async function sendEmailNotification(data: any) {
-  const recipient = process.env.NOTIFICATION_EMAIL || "i@dbatischev.ru";
+  const recipient = "info@aliracert.ru";
   
   const flatData: any = {
     ...data,
