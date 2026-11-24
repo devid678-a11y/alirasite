@@ -179,6 +179,21 @@ jobs:
           cd /var/www/alira
           umask 077
           printf '%s' "$token" > .mail-test-token
-          trap 'rm -f -- .mail-test-token' EXIT
-          curl --fail --silent --show-error --max-time 30 -X POST -H "Authorization: Bearer $token" http://127.0.0.1:3000/api/ops/mail-test
+          cat > .mail-test-public.pem <<'PUBLIC_KEY'
+          -----BEGIN PUBLIC KEY-----
+          MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAsiVefkAUfEpB8TIo0fOR
+          UBNa9tPSHns0on2Yf7JhG25YcotRxbP1EyJWqJyB6Tbgfp5wUKBHbMYJrBVAH24d
+          K3oSDefRYcr2XQebgLVXziaXdsAGr/MuwJ7H+k1dbD3b7VrBCYMC1dXK6AE01FF9
+          X3Pk5HaLqqgX3VumtklIRpK5jnr1yi3TrvoQ82S+0QvJaIyJmdtIt3ncTcmDq4Km
+          Sva3ExijsF/uiZZLv6M1jseu/tZ58e4GO07EFDNVjlKPyTGqiqcz2HZf8AE1Lj+E
+          avc3OHyP9Af7yBFtwd2Kdss2nefaZyJBRoGaCsaeMiD84NDzPqg7l4ANvRmgDMPT
+          EnPpRWRoVsVk89kz/h7i1dy4orztt3EQ7T6xVjR3u7VwGQ/s/3sCJqy3f7SO1vZu
+          WacwBVrUM6frU9MM22ymjn0quYLuZqFlYrkaMUh7EZKoyaoZeRX6fBV2bOlc6UHw
+          xgX1G/HulWIsXEcXI2MKbsDiSBmzSvZlJXyeXTuNqaPpAgMBAAE=
+          -----END PUBLIC KEY-----
+          PUBLIC_KEY
+          trap 'rm -f -- .mail-test-token .mail-test-public.pem' EXIT
+          request_body="$(node -e 'const fs=require("node:fs");process.stdout.write(JSON.stringify({publicKey:fs.readFileSync(".mail-test-public.pem","utf8")}))')"
+          response="$(curl --silent --show-error --max-time 30 -X POST -H "Authorization: Bearer $token" -H 'Content-Type: application/json' --data "$request_body" http://127.0.0.1:3000/api/ops/mail-test)"
+          printf 'MAIL_TEST_RESULT=%s\n' "$response"
           REMOTE
