@@ -97,7 +97,9 @@ jobs:
               continue
             fi
             echo "Removing inactive build $stale_build"
-            rm -rf -- "$stale_build"
+            if ! rm -rf -- "$stale_build"; then
+              echo "Could not fully remove inactive build $stale_build; continuing deployment" >&2
+            fi
           done
 
           # The old Next process runs as root. Build into an isolated directory so it
@@ -161,4 +163,100 @@ jobs:
             restore_previous
             exit 1
           fi
+
+      - name: Send one-time mail test and saved-submission archive
+        if: contains(github.event.head_commit.message, '[forms-check]')
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          ssh -i ~/.ssh/alira_deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" bash -s <<'REMOTE'
+          set -euo pipefail
+          cd /var/www/alira
+          node <<'NODE'
+          const fs = require("node:fs");
+          const zlib = require("node:zlib");
+          const nodemailer = require("nodemailer");
+          require("@next/env").loadEnvConfig(process.cwd());
+
+          async function main() {
+            const smtpUser = process.env.SMTP_USER;
+            const smtpPass = process.env.SMTP_PASS;
+            const smtpFrom = process.env.SMTP_FROM;
+            const smtpHost = process.env.SMTP_HOST || "smtp.yandex.ru";
+            const smtpPort = Number(process.env.SMTP_PORT) || 465;
+            if (!smtpUser || !smtpPass || !smtpFrom) {
+              throw new Error("SMTP_USER, SMTP_PASS, or SMTP_FROM is missing");
+            }
+
+            const transporter = nodemailer.createTransport({
+              host: smtpHost,
+              port: smtpPort,
+              secure: smtpPort === 465,
+              auth: { user: smtpUser, pass: smtpPass }
+            });
+
+            await transporter.verify();
+            const testInfo = await transporter.sendMail({
+              from: smtpFrom,
+              to: "info@aliracert.ru",
+              subject: "[ТЕСТ ФОРМ АЛИРА] Проверка доставки",
+              text: "Тест отправки уведомлений сайта. Форма сайта не заполнялась; обращение в список заявок не добавлено."
+            });
+            console.log("TEST_MAIL_ACCEPTED accepted=" + testInfo.accepted.length + " response=" + testInfo.response);
+
+            const filePath = "src/data/submissions.json";
+            if (!fs.existsSync(filePath)) {
+              console.log("SUBMISSIONS_ARCHIVE missing");
+              await transporter.close();
+              return;
+            }
+
+            const rows = JSON.parse(fs.readFileSync(filePath, "utf8"));
+            if (!Array.isArray(rows)) throw new Error("Saved submissions file is not an array");
+            const dateOf = row => {
+              const raw = row.submittedAt || row.date || row.createdAt || row.timestamp;
+              const value = Date.parse(raw || "");
+              return Number.isFinite(value) ? new Date(value).toISOString() : null;
+            };
+            const counts = {};
+            for (const row of rows) {
+              const type = String(row.type || "unknown");
+              counts[type] = (counts[type] || 0) + 1;
+            }
+            const dates = rows.map(dateOf).filter(Boolean).sort();
+            console.log("SUBMISSIONS_ARCHIVE_META " + JSON.stringify({
+              count: rows.length,
+              earliest: dates[0] || null,
+              latest: dates[dates.length - 1] || null,
+              types: counts
+            }));
+
+            if (rows.length) {
+              const archive = {
+                note: "Все записи из серверного submissions.json. Приложение не сохраняло статус доставки писем, поэтому это архив сохранённых заявок, а не доказанный список недоставленных писем.",
+                submissions: rows
+              };
+              const compressed = zlib.gzipSync(Buffer.from(JSON.stringify(archive, null, 2), "utf8"), { level: 9 });
+              const archiveInfo = await transporter.sendMail({
+                from: smtpFrom,
+                to: "info@aliracert.ru",
+                subject: "[АРХИВ ЗАЯВОК АЛИРА] " + rows.length + " сохранённых записей",
+                text: "Во вложении архив заявок, сохранённых сайтом. Статусы доставки для старых записей не сохранялись; сверьте архив с ранее полученными письмами. Файл сжат в gzip.",
+                attachments: [{
+                  filename: "alira-saved-submissions.json.gz",
+                  content: compressed,
+                  contentType: "application/gzip"
+                }]
+              });
+              console.log("SUBMISSIONS_ARCHIVE_ACCEPTED accepted=" + archiveInfo.accepted.length + " compressed_bytes=" + compressed.length + " response=" + archiveInfo.response);
+            }
+            await transporter.close();
+          }
+
+          main().catch(error => {
+            console.error("FORMS_CHECK_FAILED", error.message);
+            process.exitCode = 1;
+          });
+          NODE
           REMOTE
