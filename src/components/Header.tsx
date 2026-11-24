@@ -33,7 +33,7 @@ export const Header: React.FC<{ data?: HeaderData }> = ({ data }) => {
     <header className={styles.header}>
       <div className={styles.container}>
         <Link href="/" className={styles.logo} onClick={closeMenu} aria-label={`${companyName} — главная`}>
-          <Image src="/logo-new.png" alt="" width={42} height={42} priority />
+          <Image src="/logo-new.png?v=20261124" alt={`Логотип ${companyName}`} width={42} height={42} priority />
           <span>{companyName}</span>
         </Link>
 
