@@ -21,6 +21,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/privacy",
     "/registry",
     "/services/verification",
+    "/services/verification/spectrum-analyzers",
     "/services/gosreestr",
     "/services/repair",
     "/request-quote"
