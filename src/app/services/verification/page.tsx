@@ -1,11 +1,12 @@
 import React from "react";
+import Link from "next/link";
 import ServicesClient from "../ServicesClient";
 import ServiceLanding from "../ServiceLanding";
 import { getPagesData, getDocs } from "@/app/actions/cms";
 
 export const metadata = {
-  title: "Поверка средств измерений в Москве",
-  description: "Проводим поверку широкого спектра средств измерений для предприятий и организаций. Поможем определить возможность поверки, рассчитаем стоимость и сроки, внесем сведения во ФГИС «АРШИН».",
+  title: { absolute: "Поверка средств измерений — сроки и порядок работ | АЛИРА" },
+  description: "Пришлите список приборов — проверим возможность поверки, согласуем срок и порядок передачи. После выполнения работ передадим оформленные документы.",
   alternates: { canonical: "/services/verification" },
 };
 
@@ -107,6 +108,12 @@ export default async function VerificationPage() {
         relatedHref="/services/gosreestr"
         relatedLabel="Нужны испытания для утверждения типа?"
       />
+      <p style={{ maxWidth: 1200, margin: "0 auto 24px", padding: "0 20px", color: "var(--text-muted)" }}>
+        Для отдельных типов приборов доступны специальные условия поверки:{" "}
+        <Link href="/services/verification/spectrum-analyzers" style={{ color: "var(--primary)", fontWeight: 600 }}>
+          поверка анализаторов спектра
+        </Link>.
+      </p>
       <ServicesClient servicesData={servicesData} labDocs={labDocs} forceForm="calibration" />
     </div>
   );
