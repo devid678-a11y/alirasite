@@ -87,29 +87,154 @@ async function getCategories() {
   }
 }
 
-function shortenDescription(value: unknown, fallback: string): string {
-  const text = String(value || fallback).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
-  if (text.length <= 160) return text;
-  const shortened = text.slice(0, 157).replace(/\s+\S*$/, "");
-  return `${shortened}…`;
+function cleanMetaText(value: unknown): string {
+  return String(value || "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;|&#160;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function shortenDescription(value: unknown, fallback: string, maxLength = 160): string {
+  const text = cleanMetaText(value) || cleanMetaText(fallback);
+  if (text.length <= maxLength) return text;
+
+  const excerpt = text.slice(0, maxLength - 1);
+  const wordEnd = excerpt.lastIndexOf(" ");
+  return (wordEnd > maxLength * 0.55 ? excerpt.slice(0, wordEnd) : excerpt).trim() + "…";
+}
+
+function getCategoryDescendantIds(categoryId: string, categories: any[]): Set<string> {
+  const result = new Set<string>();
+  const pending = [categoryId];
+
+  while (pending.length > 0) {
+    const currentId = pending.pop()!;
+    if (result.has(currentId)) continue;
+    result.add(currentId);
+
+    for (const child of categories) {
+      if (String(child.parentId || "") === currentId) {
+        pending.push(String(child.id));
+      }
+    }
+  }
+
+  return result;
+}
+
+function getCategoryMetaDescription(category: any, categories: any[], products: any[]): string {
+  const categoryIds = getCategoryDescendantIds(String(category.id), categories);
+  const categoryProducts = products.filter((product: any) => categoryIds.has(String(product.categoryId || "")));
+  const count = categoryProducts.length;
+  const lastDigit = count % 10;
+  const lastTwoDigits = count % 100;
+  const countLabel = lastTwoDigits >= 11 && lastTwoDigits <= 14
+    ? "позиций"
+    : lastDigit === 1
+      ? "позиция"
+      : lastDigit >= 2 && lastDigit <= 4
+        ? "позиции"
+        : "позиций";
+
+  const examples = categoryProducts
+    .slice(0, 2)
+    .map((product: any) => cleanMetaText(product.name))
+    .filter(Boolean)
+    .map((name: string) => shortenDescription(name, "", 34));
+
+  let summary = "";
+  if (count > 0) {
+    summary = "В каталоге " + count + " " + countLabel;
+    if (examples.length > 0) summary += ", например: " + examples.join("; ");
+    summary += ".";
+  } else {
+    const subcategories = categories
+      .filter((item: any) => String(item.parentId || "") === String(category.id))
+      .slice(0, 2)
+      .map((item: any) => cleanMetaText(item.name))
+      .filter(Boolean);
+    summary = subcategories.length > 0
+      ? "В разделе представлены категории: " + subcategories.join("; ") + "."
+      : "Уточните, какие модели оборудования доступны в этой категории.";
+  }
+
+  return shortenDescription(
+    summary + " Уточните наличие и срок поставки; запросите КП.",
+    "Подбор оборудования из категории " + cleanMetaText(category.name) + ". Уточните наличие и срок поставки.",
+  );
+}
+
+function getProductFacts(product: any): string[] {
+  const specs = product?.specs;
+  if (!specs || typeof specs !== "object" || Array.isArray(specs)) return [];
+
+  const excludedTerms = /цена|стоимост|руб\.?|₽|скидк|дешев|выгодн|наличи|поставк|гарант/i;
+  const priority = (label: string): number => {
+    if (/диапазон|частот|длин.{0,8}волн/i.test(label)) return 0;
+    if (/точност|погреш|разреш|скорост/i.test(label)) return 1;
+    if (/динамическ|чувствительн|полос|мощност|канал/i.test(label)) return 2;
+    return 3;
+  };
+
+  return Object.entries(specs)
+    .map(([label, value]) => ({
+      label: cleanMetaText(label),
+      value: cleanMetaText(value),
+    }))
+    .filter((item) => item.label && item.value && !excludedTerms.test(item.label + " " + item.value))
+    .sort((left, right) => priority(left.label) - priority(right.label))
+    .slice(0, 2)
+    .map((item) => item.label + ": " + item.value);
+}
+
+function getSafeProductExcerpt(product: any): string {
+  const excludedTerms = /цен|стоимост|руб\.?|₽|скидк|дешев|выгодн/i;
+  const description = cleanMetaText(product?.description);
+  const sentences = description.split(/(?<=[.!?])\s+/);
+  return sentences.find((sentence) => sentence.length > 24 && !excludedTerms.test(sentence)) || "";
+}
+
+function getProductMetaDescription(product: any): string {
+  const facts = getProductFacts(product);
+  const uniqueDetail = facts.length > 0
+    ? facts.join("; ")
+    : getSafeProductExcerpt(product) || cleanMetaText(product.name) || "Характеристики прибора";
+  const suffix = " Наличие и срок поставки уточните при запросе КП.";
+  const detailBudget = 160 - suffix.length - 2;
+  const detail = shortenDescription(uniqueDetail, "Характеристики уточняйте по модели.", detailBudget)
+    .replace(/[.;,\s]+$/g, "");
+
+  return detail + "." + suffix;
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string[] }> }): Promise<Metadata> {
   const { slug } = await params;
   const lastSlugPart = canonicalCatalogSegment(slug[slug.length - 1] || "");
   const [categories] = await Promise.all([getCategories()]);
-  const canonical = `/catalog/${slug.map(canonicalCatalogSegment).join("/")}`;
+  const canonical = "/catalog/" + slug.map(canonicalCatalogSegment).join("/");
 
   const category = findCategoryForSlug(slug, categories);
   if (category) {
-    const title = `${category.name} — каталог измерительного оборудования`;
-    const description = shortenDescription(
-      category.description,
-      `Каталог «${category.name}»: подбор и поставка измерительного оборудования. Уточните характеристики, стоимость и сроки у ООО «Алира».`,
-    );
+    let products: any[] = [];
+    try {
+      products = (await getCmsProducts()) || [];
+    } catch {
+      products = [];
+    }
+
+    const title = String(category.id) === "lls-opticheskie-analizatory-spektra"
+      ? "Купить анализатор спектра — подбор и поставка | АЛИРА"
+      : cleanMetaText(category.name) + " — подбор и поставка | АЛИРА";
+    const description = getCategoryMetaDescription(category, categories, products);
 
     return {
-      title,
+      title: { absolute: title },
       description,
       alternates: { canonical },
       openGraph: { title, description, url: canonical },
@@ -120,20 +245,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const products = await getCmsProducts();
   const product = products.find((item: any) => canonicalCatalogSegment(String(item.id || "")) === lastSlugPart);
   if (product) {
-    const productName = String(product.name || "Средство измерений");
-    const brandName = String(product.brand || "").trim();
-    const brandSuffix =
-      brandName && brandName.toLowerCase() !== "unknown" && !productName.toLowerCase().includes(brandName.toLowerCase())
-        ? ` — ${brandName}`
-        : "";
-    const title = `${productName}${brandSuffix} — характеристики и поставка`;
-    const description = shortenDescription(
-      product.description,
-      `Характеристики и поставка средства измерений ${productName}. Запросите стоимость и срок у ООО «Алира».`,
-    );
+    const productName = cleanMetaText(product.name) || "Средство измерений";
+    const title = "Купить " + productName + " | АЛИРА";
+    const description = getProductMetaDescription(product);
 
     return {
-      title,
+      title: { absolute: title },
       description,
       alternates: { canonical },
       openGraph: { title, description, url: canonical },
@@ -143,10 +260,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
   return {
     title: "Страница каталога не найдена",
-    description: "Каталог измерительного оборудования ООО «Алира».",
+    description: "Каталог измерительного оборудования АЛИРА.",
     robots: { index: false, follow: true },
   };
 }
+
 export default async function CatalogSlugPage({ params }: { params: Promise<{ slug: string[] }> }) {
   const resolvedParams = await params;
   const { slug } = resolvedParams;
@@ -217,16 +335,6 @@ export default async function CatalogSlugPage({ params }: { params: Promise<{ sl
           "brand": {
             "@type": "Brand",
             "name": product.brand || "ООО Алира"
-          },
-          "offers": {
-            "@type": "Offer",
-            "priceCurrency": "RUB",
-            "price": product.price && !isNaN(parseFloat(product.price)) ? parseFloat(product.price) : 0,
-            "availability": product.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-            "seller": {
-              "@type": "Organization",
-              "name": "ООО «Алира»"
-            }
           }
         }
       ]
@@ -341,6 +449,15 @@ export default async function CatalogSlugPage({ params }: { params: Promise<{ sl
         </nav>
 
         <h1 className={styles.title}>{category.name}</h1>
+
+        {/(анализатор(?:ы)?\s+спектра|спектроанализатор)/i.test(String(category.name || "")) && (
+          <p style={{ margin: "-12px 0 24px", color: "var(--text-muted)" }}>
+            Нужна поверка такого прибора?{" "}
+            <Link className={styles.crumbLink} href="/services/verification/spectrum-analyzers">
+              Поверка анализаторов спектра
+            </Link>
+          </p>
+        )}
 
         {subCategories.length > 0 ? (
           <div className={styles.subCatGrid}>
