@@ -68,8 +68,8 @@ function resolveCategoryImage(catId: string, categories: any[], products: any[])
 }
 
 export const metadata = {
-  title: "Метрологическое оборудование. Оснащение лабораторий",
-  description: "Метрологическое оборудование и оснащение лабораторий. Поставка измерительных приборов от компании ООО «Алира».",
+  title: { absolute: "Измерительное оборудование — подбор и поставка | АЛИРА" },
+  description: "Оптические, радиочастотные и лабораторные приборы. Подберём оборудование по задаче, уточним комплектацию и срок поставки; подготовим КП.",
   alternates: { canonical: "/catalog" },
 };
 
@@ -109,7 +109,10 @@ export default async function CatalogIndex({
   return (
     <div className={styles.page}>
       <div className={styles.container}>
-        <h1 className={styles.title}>Метрологическое оборудование. Оснащение лабораторий</h1>
+        <h1 className={styles.title}>Измерительное оборудование — подбор и поставка</h1>
+        <p style={{ maxWidth: 760, margin: "-16px 0 24px", color: "var(--text-muted)", lineHeight: 1.6 }}>
+          Подберём прибор по техническим требованиям, уточним комплектацию и срок поставки. Отправьте запрос, чтобы получить КП.
+        </p>
         
         {/* Search bar component */}
         <SearchBar />
