@@ -26,13 +26,13 @@ export default function ServicesClient({
   const [serviceSubtype, setServiceSubtype] = useState<"verification" | "calibration">(fixedServiceSubtype || "verification");
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const formRef = useRef<HTMLDivElement>(null);
 
   // --- Calibration Form State ---
   const [calibContact, setCalibContact] = useState({
     orgName: "",
     email: "",
     phone: "",
+    instrumentList: "",
     comment: "",
     consent: false
   });
@@ -98,9 +98,6 @@ export default function ServicesClient({
         }
       } else if (formParam === "calibration" || formParam === "testing") {
         setActiveForm(formParam as any);
-        setTimeout(() => {
-          formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-        }, 300);
       } else if (savedActiveForm) {
         try { setActiveForm(JSON.parse(savedActiveForm) as any); } catch (e) {}
       }
@@ -154,6 +151,7 @@ export default function ServicesClient({
         orgName: "",
         email: "",
         phone: "",
+        instrumentList: "",
         comment: "",
         consent: false
       });
@@ -185,7 +183,7 @@ export default function ServicesClient({
 
   const checkHasChanges = (type: "calibration" | "testing"): boolean => {
     if (type === "calibration") {
-      const hasContactData = calibContact.orgName || calibContact.email || calibContact.phone || calibContact.comment || calibContact.consent;
+      const hasContactData = calibContact.orgName || calibContact.email || calibContact.phone || calibContact.instrumentList || calibContact.comment || calibContact.consent;
       return !!hasContactData;
     } else {
       const hasTestingData = Object.entries(testingForm).some(([key, val]) => {
@@ -317,17 +315,9 @@ export default function ServicesClient({
     setTestingSuggestions([]);
   };
 
-  // Scroll to form smoothly
-  const scrollToForm = () => {
-    setTimeout(() => {
-      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 100);
-  };
-
   const handleOpenForm = (type: "calibration" | "testing") => {
     setActiveForm(type);
     setSubmitted(false);
-    scrollToForm();
   };
 
   // --- Calibration Handlers ---
@@ -379,10 +369,13 @@ export default function ServicesClient({
         serviceName: isVerification ? "Поверка средств измерений" : "Калибровка средств измерений",
         ...(requestLabel ? { productName: requestLabel } : {}),
         contact: {
-          orgName: calibContact.orgName || "",
+          orgName: serviceSubtype === "verification" ? "" : (calibContact.orgName || ""),
           email: calibContact.email || "",
           phone: calibContact.phone || "",
-          message: calibContact.comment || ""
+          message: [
+            calibContact.instrumentList.trim() ? `Список средств измерений:\n${calibContact.instrumentList.trim()}` : "",
+            calibContact.comment.trim() ? `Комментарий:\n${calibContact.comment.trim()}` : "",
+          ].filter(Boolean).join("\n\n")
         },
         submittedAt: new Date().toISOString()
       };
@@ -529,7 +522,7 @@ export default function ServicesClient({
         )}
 
         {/* Form Anchor */}
-        {!requestForm && <div id="service-request" ref={formRef} tabIndex={-1} className={styles.formAnchor} />}
+        {!requestForm && <div id="service-request" tabIndex={-1} className={styles.formAnchor} />}
 
         {/* Forms Render Area in Modal Pop-up or Inline */}
         {activeForm && (
@@ -604,11 +597,12 @@ export default function ServicesClient({
                       <h2 className={styles.formTitle}>Оставьте контакты — мы свяжемся</h2>
                       <p className={styles.formSubtitle}>
                         {serviceSubtype === "verification"
-                          ? "Оставьте телефон или email. Прибор и характеристики можно указать в комментарии по желанию — мы свяжемся и уточним детали."
-                          : "Оставьте телефон или email. Если хотите, напишите в комментарии, что нужно откалибровать. Мы свяжемся и уточним детали."}
+                          ? "Оставьте телефон или email. Список приборов и комментарий можно добавить по желанию — мы свяжемся и уточним детали."
+                          : "Оставьте телефон или email. По желанию добавьте список приборов и комментарий — мы уточним детали при общении."}
                       </p>
 
                       <div className={styles.formGridContacts}>
+                        {serviceSubtype === "calibration" && (
                         <div className={styles.formGroup} style={{ position: "relative" }}>
                           <label className={styles.inputLabel} htmlFor="calibration-org-name">Компания (необязательно):</label>
                           <input
@@ -641,6 +635,7 @@ export default function ServicesClient({
                             </div>
                           )}
                         </div>
+                        )}
 
                         <div className={styles.formGroup}>
                           <label className={styles.inputLabel} htmlFor="calibration-phone">Телефон для связи:</label>
@@ -672,6 +667,20 @@ export default function ServicesClient({
                       </div>
                       <p className={styles.contactHint}>Достаточно указать телефон или email — можно оставить только один контакт.</p>
                       <div className={styles.formGroupFull}>
+                        <label className={styles.inputLabel} htmlFor="calibration-instrument-list">
+                          Список средств измерений <span style={{ color: "#7b8999", fontWeight: 400 }}>(необязательно)</span>
+                        </label>
+                        <textarea
+                          id="calibration-instrument-list"
+                          name="instrumentList"
+                          value={calibContact.instrumentList}
+                          onChange={handleCalibContactChange}
+                          className={styles.textArea}
+                          rows={3}
+                          placeholder="Если удобно, перечислите приборы. Можно оставить поле пустым."
+                        />
+                      </div>
+                      <div className={styles.formGroupFull}>
                         <label className={styles.inputLabel} htmlFor="calibration-comment">
                           Комментарий <span style={{ color: "#7b8999", fontWeight: 400 }}>(необязательно)</span>
                         </label>
@@ -681,12 +690,9 @@ export default function ServicesClient({
                           value={calibContact.comment}
                           onChange={handleCalibContactChange}
                           className={styles.textArea}
-                          rows={4}
-                          placeholder="Например, какие приборы нужно поверить. Марку, модель и характеристики можно указать по желанию."
+                          rows={3}
+                          placeholder="Дополнительная информация или пожелание по срокам."
                         />
-                        <p className={styles.contactHint} style={{ margin: "2px 0 10px" }}>
-                          Можно оставить поле пустым — мы уточним детали при общении.
-                        </p>
                       </div>
 
                       <label className={styles.consentRow}>
