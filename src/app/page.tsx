@@ -41,7 +41,7 @@ export default function Home() {
                 Рассчитать поверку <ArrowRight size={18} aria-hidden="true" />
               </Link>
               <Link href="/services/gosreestr?form=testing" className={s.textLink}>
-                Заказать испытания <ArrowUpRight size={17} aria-hidden="true" />
+                Внесение в Госреестр <ArrowUpRight size={17} aria-hidden="true" />
               </Link>
             </div>
           </div>
@@ -80,7 +80,7 @@ export default function Home() {
               <h3>Испытания для утверждения типа</h3>
               <p>Принимаем средство измерений, проводим испытания и готовим документы для утверждения типа. Ведём процесс до оформленного результата.</p>
               <div className={s.serviceBottom}>
-                <Link href="/services/gosreestr?form=testing">Заказать испытания <ArrowUpRight size={19} aria-hidden="true" /></Link>
+                <Link href="/services/gosreestr?form=testing">Внесение в Госреестр <ArrowUpRight size={19} aria-hidden="true" /></Link>
                 <span>УТВЕРЖДЕНИЕ ТИПА</span>
               </div>
             </article>
