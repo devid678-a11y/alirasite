@@ -2,34 +2,26 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { CheckCircle2, FileText, Download, Plus, Trash2, Upload, Activity, Check, X, Wrench } from "lucide-react";
+import { CheckCircle2, FileText, Download, Activity, Check, X, Wrench } from "lucide-react";
 import { Button } from "@/components/Button";
 import styles from "./page.module.css";
-import { saveSubmission, uploadFile, suggestParty } from "@/app/actions/cms";
-
-interface DevicePosition {
-  id: string;
-  name: string;
-  type: string;
-  serial: string;
-  quantity: string;
-  specs: string;
-  verificationInfo: string;
-  photo: File | null;
-  photoUrl: string;
-}
+import { saveSubmission, suggestParty } from "@/app/actions/cms";
 
 export default function ServicesClient({
   servicesData,
   labDocs,
-  forceForm = null
+  forceForm = null,
+  fixedServiceSubtype = null,
+  requestLabel = ""
 }: {
   servicesData: any;
   labDocs: any[];
   forceForm?: "calibration" | "testing" | null;
+  fixedServiceSubtype?: "verification" | "calibration" | null;
+  requestLabel?: string;
 }) {
   const [activeForm, setActiveForm] = useState<"calibration" | "testing" | null>(forceForm);
-  const [serviceSubtype, setServiceSubtype] = useState<"verification" | "calibration">("verification");
+  const [serviceSubtype, setServiceSubtype] = useState<"verification" | "calibration">(fixedServiceSubtype || "verification");
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
@@ -39,22 +31,9 @@ export default function ServicesClient({
     orgName: "",
     email: "",
     phone: "",
+    comment: "",
     consent: false
   });
-
-  const [devices, setDevices] = useState<DevicePosition[]>([
-    {
-      id: "1",
-      name: "",
-      type: "",
-      serial: "",
-      quantity: "1",
-      specs: "",
-      verificationInfo: "",
-      photo: null,
-      photoUrl: ""
-    }
-  ]);
 
   // --- Testing Form State ---
   const [testingForm, setTestingForm] = useState({
@@ -85,15 +64,11 @@ export default function ServicesClient({
   useEffect(() => {
     setMounted(true);
     const savedCalibContact = localStorage.getItem("calibContact");
-    const savedDevices = localStorage.getItem("calibDevices");
     const savedTestingForm = localStorage.getItem("testingForm");
     const savedActiveForm = localStorage.getItem("activeForm");
 
     if (savedCalibContact) {
-      try { setCalibContact(JSON.parse(savedCalibContact)); } catch (e) {}
-    }
-    if (savedDevices) {
-      try { setDevices(JSON.parse(savedDevices)); } catch (e) {}
+      try { setCalibContact(prev => ({ ...prev, ...JSON.parse(savedCalibContact) })); } catch (e) {}
     }
     if (savedTestingForm) {
       try {
@@ -131,25 +106,13 @@ export default function ServicesClient({
   }, [forceForm, mounted]);
 
   useEffect(() => {
-    if (!mounted) return;
-    localStorage.setItem("calibContact", JSON.stringify(calibContact));
-  }, [calibContact, mounted]);
+    if (fixedServiceSubtype) setServiceSubtype(fixedServiceSubtype);
+  }, [fixedServiceSubtype]);
 
   useEffect(() => {
     if (!mounted) return;
-    const serializedDevices = devices.map(d => ({
-      id: d.id,
-      name: d.name,
-      type: d.type,
-      serial: d.serial,
-      quantity: d.quantity,
-      specs: d.specs,
-      verificationInfo: d.verificationInfo,
-      photoUrl: d.photoUrl,
-      photo: null // Files cannot be JSON-serialized
-    }));
-    localStorage.setItem("calibDevices", JSON.stringify(serializedDevices));
-  }, [devices, mounted]);
+    localStorage.setItem("calibContact", JSON.stringify(calibContact));
+  }, [calibContact, mounted]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -168,26 +131,13 @@ export default function ServicesClient({
   const clearDraft = (type: "calibration" | "testing") => {
     if (type === "calibration") {
       localStorage.removeItem("calibContact");
-      localStorage.removeItem("calibDevices");
       setCalibContact({
         orgName: "",
         email: "",
         phone: "",
+        comment: "",
         consent: false
       });
-      setDevices([
-        {
-          id: "1",
-          name: "",
-          type: "",
-          serial: "",
-          quantity: "1",
-          specs: "",
-          verificationInfo: "",
-          photo: null,
-          photoUrl: ""
-        }
-      ]);
     } else {
       localStorage.removeItem("testingForm");
       setTestingForm({
@@ -216,9 +166,8 @@ export default function ServicesClient({
 
   const checkHasChanges = (type: "calibration" | "testing"): boolean => {
     if (type === "calibration") {
-      const hasContactData = calibContact.orgName || calibContact.email || calibContact.phone || calibContact.consent;
-      const hasDeviceData = devices.some(d => d.name || d.type || d.serial || d.specs || d.verificationInfo || d.photoUrl);
-      return !!(hasContactData || hasDeviceData || devices.length > 1);
+      const hasContactData = calibContact.orgName || calibContact.email || calibContact.phone || calibContact.comment || calibContact.consent;
+      return !!hasContactData;
     } else {
       const hasTestingData = Object.entries(testingForm).some(([key, val]) => {
         if (key === "prodType" && val === "серийное") return false;
@@ -255,7 +204,7 @@ export default function ServicesClient({
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeForm, calibContact, devices, testingForm, forceForm]);
+  }, [activeForm, calibContact, testingForm, forceForm]);
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -363,53 +312,12 @@ export default function ServicesClient({
   };
 
   // --- Calibration Handlers ---
-  const handleCalibContactChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
+  const handleCalibContactChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
     setCalibContact(prev => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value
+      [name]: value
     }));
-  };
-
-  const handleDeviceChange = (idx: number, field: keyof DevicePosition, value: any) => {
-    const updated = [...devices];
-    updated[idx] = {
-      ...updated[idx],
-      [field]: value
-    };
-    setDevices(updated);
-  };
-
-  const handlePhotoUpload = (idx: number, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null;
-    if (file) {
-      const url = URL.createObjectURL(file);
-      handleDeviceChange(idx, "photo", file);
-      handleDeviceChange(idx, "photoUrl", url);
-    }
-  };
-
-  const addDevicePosition = () => {
-    setDevices(prev => [
-      ...prev,
-      {
-        id: Date.now().toString(),
-        name: "",
-        type: "",
-        serial: "",
-        quantity: "1",
-        specs: "",
-        verificationInfo: "",
-        photo: null,
-        photoUrl: ""
-      }
-    ]);
-  };
-
-  const removeDevicePosition = (idx: number) => {
-    if (devices.length === 1) return; // Keep at least one
-    const updated = devices.filter((_, i) => i !== idx);
-    setDevices(updated);
   };
 
   // --- Testing Handlers ---
@@ -438,10 +346,6 @@ export default function ServicesClient({
       alert("Укажите телефон или адрес электронной почты — как вам удобнее.");
       return;
     }
-    if (devices.some(d => !d.name.trim())) {
-      alert("Укажите модель или тип прибора хотя бы для одной позиции.");
-      return;
-    }
     if (!calibContact.consent) {
       alert("Необходимо дать согласие на обработку персональных данных.");
       return;
@@ -449,43 +353,18 @@ export default function ServicesClient({
 
     setIsSubmitting(true);
     try {
-      // Process devices and upload photos if any
-      const processedDevices = await Promise.all(
-        devices.map(async (d) => {
-          let uploadedPhotoUrl = "";
-          if (d.photo && d.photo instanceof File) {
-            const formData = new FormData();
-            formData.append("file", d.photo);
-            try {
-              const res = await uploadFile(formData);
-              uploadedPhotoUrl = res.url;
-            } catch (err) {
-              console.error("Error uploading photo for device", d.name, err);
-            }
-          }
-          return {
-            name: d.name || "",
-            type: d.type || "",
-            serial: d.serial || "",
-            quantity: String(d.quantity || "1"),
-            specs: d.specs || "",
-            verificationInfo: d.verificationInfo || "",
-            photoUrl: uploadedPhotoUrl || (typeof d.photoUrl === "string" && !d.photoUrl.startsWith("blob:") ? d.photoUrl : "")
-          };
-        })
-      );
-
       const isVerification = serviceSubtype === "verification";
       const submissionData = {
         type: serviceSubtype,
         serviceSubtype: serviceSubtype,
         serviceName: isVerification ? "Поверка средств измерений" : "Калибровка средств измерений",
+        ...(requestLabel ? { productName: requestLabel } : {}),
         contact: {
           orgName: calibContact.orgName || "",
           email: calibContact.email || "",
-          phone: calibContact.phone || ""
+          phone: calibContact.phone || "",
+          message: calibContact.comment || ""
         },
-        devices: processedDevices,
         submittedAt: new Date().toISOString()
       };
 
@@ -673,6 +552,7 @@ export default function ServicesClient({
                   {/* Form 1: Verification & Calibration */}
                   {activeForm === "calibration" && (
                     <form onSubmit={handleCalibSubmit} style={{ border: "none", padding: 0 }}>
+                      {!fixedServiceSubtype && (
                       <div className={styles.serviceTabs} role="tablist" aria-label="Выберите тип услуги">
                         <button
                           type="button"
@@ -698,13 +578,13 @@ export default function ServicesClient({
                         </button>
                       </div>
 
-                      <h2 className={styles.formTitle}>
-                        {serviceSubtype === "verification" ? "Запросить расчёт поверки" : "Запросить расчёт калибровки"}
-                      </h2>
+                      )}
+
+                      <h2 className={styles.formTitle}>Оставьте контакты — мы свяжемся</h2>
                       <p className={styles.formSubtitle}>
                         {serviceSubtype === "verification"
-                          ? "Укажите модель прибора и один удобный способ связи. Заводской номер и другие технические сведения можно добавить, если они под рукой."
-                          : "Укажите модель прибора для калибровки и контактные данные. Рассчитаем стоимость, сроки и согласуем методику калибровки."}
+                          ? "Оставьте телефон или email. Прибор и характеристики можно указать в комментарии по желанию — мы свяжемся и уточним детали."
+                          : "Оставьте телефон или email. Если хотите, напишите в комментарии, что нужно откалибровать. Мы свяжемся и уточним детали."}
                       </p>
 
                       <div className={styles.formGridContacts}>
@@ -769,149 +649,23 @@ export default function ServicesClient({
                           />
                         </div>
                       </div>
-                      <p className={styles.contactHint}>Заполните телефон или электронную почту — достаточно одного варианта.</p>
-
-                      {/* Device Lists Block */}
-                      <div className={styles.devicesSection}>
-                        <div className={styles.devicesHeader}>
-                          <div>
-                            <h3 className={styles.devicesTitle}>
-                              {serviceSubtype === "verification" ? "Список измерительных приборов на поверку" : "Список измерительных приборов на калибровку"}
-                            </h3>
-                            <p className={styles.devicesSubtitle}>
-                              Можно начать с одного прибора. Остальные поля необязательны.
-                            </p>
-                          </div>
-                        </div>
-
-                        {devices.map((device, idx) => (
-                          <div key={device.id} className={styles.deviceBlock}>
-                            <div className={styles.deviceBlockHeader}>
-                              <span className={styles.deviceBlockIndex}>Позиция №{idx + 1}</span>
-                              {devices.length > 1 && (
-                                <button
-                                  type="button"
-                                  className={styles.deviceBlockDelete}
-                                  onClick={() => removeDevicePosition(idx)}
-                                >
-                                  <Trash2 size={15} /> Удалить позицию
-                                </button>
-                              )}
-                            </div>
-
-                            <div className={styles.formGroup}>
-                              <label className={styles.inputLabel} htmlFor={`calibration-device-${idx}`}>
-                                Модель или тип прибора: <span className={styles.requiredStar}>*</span>
-                              </label>
-                              <input
-                                type="text"
-                                id={`calibration-device-${idx}`}
-                                value={device.name}
-                                onChange={(e) => handleDeviceChange(idx, "name", e.target.value)}
-                                className={styles.textInput}
-                                placeholder="Например, оптический рефлектометр AQ7280 или анализатор спектра N9030B"
-                                required
-                              />
-                            </div>
-
-                            <details className={styles.optionalFields}>
-                              <summary className={styles.optionalSummary}>
-                                Добавить заводской номер, количество или другие сведения
-                              </summary>
-                              <div className={styles.optionalGrid}>
-                                <div className={styles.formGroup}>
-                                  <label className={styles.inputLabel} htmlFor={`calibration-device-type-${idx}`}>Марка и изготовитель:</label>
-                                  <input
-                                    type="text"
-                                    id={`calibration-device-type-${idx}`}
-                                    value={device.type}
-                                    onChange={(e) => handleDeviceChange(idx, "type", e.target.value)}
-                                    className={styles.textInput}
-                                    placeholder="Например, Yokogawa / Keysight"
-                                  />
-                                </div>
-
-                                <div className={styles.formGroup}>
-                                  <label className={styles.inputLabel} htmlFor={`calibration-device-serial-${idx}`}>Заводской номер:</label>
-                                  <input
-                                    type="text"
-                                    id={`calibration-device-serial-${idx}`}
-                                    value={device.serial}
-                                    onChange={(e) => handleDeviceChange(idx, "serial", e.target.value)}
-                                    className={styles.textInput}
-                                    placeholder="SN12345678"
-                                  />
-                                </div>
-
-                                <div className={styles.formGroup}>
-                                  <label className={styles.inputLabel} htmlFor={`calibration-device-quantity-${idx}`}>Количество:</label>
-                                  <input
-                                    type="number"
-                                    id={`calibration-device-quantity-${idx}`}
-                                    min="1"
-                                    value={device.quantity}
-                                    onChange={(e) => handleDeviceChange(idx, "quantity", e.target.value)}
-                                    className={styles.textInput}
-                                  />
-                                </div>
-
-                                <div className={styles.formGroupFull}>
-                                  <label className={styles.inputLabel} htmlFor={`calibration-device-specs-${idx}`}>Технические характеристики:</label>
-                                  <textarea
-                                    id={`calibration-device-specs-${idx}`}
-                                    value={device.specs}
-                                    onChange={(e) => handleDeviceChange(idx, "specs", e.target.value)}
-                                    className={styles.textArea}
-                                    placeholder="Диапазон измерений, погрешность — если известны"
-                                  />
-                                </div>
-
-                                <div className={styles.formGroupFull}>
-                                  <label className={styles.inputLabel} htmlFor={`calibration-device-verification-${idx}`}>
-                                    {serviceSubtype === "verification" ? "Сведения о предыдущей поверке:" : "Требования к калибровке / методика:"}
-                                  </label>
-                                  <input
-                                    type="text"
-                                    id={`calibration-device-verification-${idx}`}
-                                    value={device.verificationInfo}
-                                    onChange={(e) => handleDeviceChange(idx, "verificationInfo", e.target.value)}
-                                    className={styles.textInput}
-                                    placeholder="Номер свидетельства или дата — если есть"
-                                  />
-                                </div>
-
-                                <div className={styles.formGroupFull}>
-                                  <label className={styles.inputLabel}>Фото шильдика или прибора:</label>
-                                  <div className={styles.fileUploadWrapper}>
-                                    {device.photoUrl && (
-                                      <img src={device.photoUrl} alt="Загруженное фото прибора" className={styles.imagePreview} />
-                                    )}
-                                    <label className={styles.fileUploadBtn}>
-                                      <Upload size={15} /> Выбрать фото
-                                      <input
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={(e) => handlePhotoUpload(idx, e)}
-                                        className={styles.fileInputHidden}
-                                      />
-                                    </label>
-                                    <span className={styles.fileName}>
-                                      {device.photo ? device.photo.name : "Фото необязательно"}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            </details>
-                          </div>
-                        ))}
-
-                        <button
-                          type="button"
-                          className={styles.addButton}
-                          onClick={addDevicePosition}
-                        >
-                          <Plus size={16} /> Добавить позицию прибора
-                        </button>
+                      <p className={styles.contactHint}>Достаточно указать телефон или email — можно оставить только один контакт.</p>
+                      <div className={styles.formGroupFull}>
+                        <label className={styles.inputLabel} htmlFor="calibration-comment">
+                          Комментарий <span style={{ color: "#7b8999", fontWeight: 400 }}>(необязательно)</span>
+                        </label>
+                        <textarea
+                          id="calibration-comment"
+                          name="comment"
+                          value={calibContact.comment}
+                          onChange={handleCalibContactChange}
+                          className={styles.textArea}
+                          rows={4}
+                          placeholder="Например, какие приборы нужно поверить. Марку, модель и характеристики можно указать по желанию."
+                        />
+                        <p className={styles.contactHint} style={{ margin: "2px 0 10px" }}>
+                          Можно оставить поле пустым — мы уточним детали при общении.
+                        </p>
                       </div>
 
                       <label className={styles.consentRow}>
