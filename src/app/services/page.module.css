@@ -873,3 +873,18 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+.instrumentListGroup { margin-top: 2px; }
+.optionalLabel { color: #7b8999; font-size: 13px; font-weight: 400; }
+.instrumentRows { display: flex; flex-direction: column; gap: 10px; }
+.instrumentRow { display: grid; grid-template-columns: minmax(0, 1fr) 130px 42px; align-items: end; gap: 10px; }
+.removeInstrumentButton { width: 42px; height: 42px; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0; border: 1px solid #d9e3ef; border-radius: 10px; background: #fff; color: #596b7f; cursor: pointer; }
+.removeInstrumentButton:hover { border-color: #a8b9cd; background: #f5f8fc; color: #173b69; }
+.addInstrumentButton { min-height: 40px; width: fit-content; display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid #d9e3ef; border-radius: 10px; background: #f7f9fc; color: #173b69; font: inherit; font-size: 13px; font-weight: 650; cursor: pointer; }
+.addInstrumentButton:hover { border-color: #a8b9cd; background: #eaf1f9; }
+@media (max-width: 640px) {
+  .instrumentRow { grid-template-columns: minmax(0, 1fr) 94px 38px; gap: 8px; }
+  .removeInstrumentButton { width: 38px; }
+  .addInstrumentButton { width: 100%; justify-content: center; }
+}

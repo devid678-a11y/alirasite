@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { CheckCircle2, FileText, Activity, Check, X, Wrench } from "lucide-react";
+import { CheckCircle2, FileText, Activity, Check, X, Wrench, Plus } from "lucide-react";
 import { Button } from "@/components/Button";
 import styles from "./page.module.css";
 import { saveSubmission, suggestParty } from "@/app/actions/cms";
@@ -32,7 +32,7 @@ export default function ServicesClient({
     orgName: "",
     email: "",
     phone: "",
-    instrumentList: "",
+    devices: [] as Array<{ name: string; quantity: string }>,
     comment: "",
     consent: false
   });
@@ -70,7 +70,21 @@ export default function ServicesClient({
     const savedActiveForm = localStorage.getItem("activeForm");
 
     if (savedCalibContact) {
-      try { setCalibContact(prev => ({ ...prev, ...JSON.parse(savedCalibContact) })); } catch (e) {}
+      try {
+        const savedValues = JSON.parse(savedCalibContact);
+        const { instrumentList: legacyInstrumentList, ...savedContact } = savedValues;
+        const devices = Array.isArray(savedContact.devices)
+          ? savedContact.devices.map((device: any) => ({
+              name: String(device?.name || ""),
+              quantity: String(device?.quantity || "1"),
+            }))
+          : String(legacyInstrumentList || "")
+              .split(/\r?\n/)
+              .map((name: string) => name.trim())
+              .filter(Boolean)
+              .map((name: string) => ({ name, quantity: "1" }));
+        setCalibContact(prev => ({ ...prev, ...savedContact, devices }));
+      } catch (e) {}
     }
     if (savedTestingForm) {
       try {
@@ -151,7 +165,7 @@ export default function ServicesClient({
         orgName: "",
         email: "",
         phone: "",
-        instrumentList: "",
+        devices: [],
         comment: "",
         consent: false
       });
@@ -183,7 +197,7 @@ export default function ServicesClient({
 
   const checkHasChanges = (type: "calibration" | "testing"): boolean => {
     if (type === "calibration") {
-      const hasContactData = calibContact.orgName || calibContact.email || calibContact.phone || calibContact.instrumentList || calibContact.comment || calibContact.consent;
+      const hasContactData = calibContact.orgName || calibContact.email || calibContact.phone || calibContact.devices.some(device => device.name.trim() || (device.quantity && device.quantity !== "1")) || calibContact.comment || calibContact.consent;
       return !!hasContactData;
     } else {
       const hasTestingData = Object.entries(testingForm).some(([key, val]) => {
@@ -329,6 +343,29 @@ export default function ServicesClient({
     }));
   };
 
+  const addInstrument = () => {
+    setCalibContact(prev => ({
+      ...prev,
+      devices: [...prev.devices, { name: "", quantity: "1" }]
+    }));
+  };
+
+  const updateInstrument = (index: number, field: "name" | "quantity", value: string) => {
+    setCalibContact(prev => ({
+      ...prev,
+      devices: prev.devices.map((device, deviceIndex) =>
+        deviceIndex === index ? { ...device, [field]: value } : device
+      )
+    }));
+  };
+
+  const removeInstrument = (index: number) => {
+    setCalibContact(prev => ({
+      ...prev,
+      devices: prev.devices.filter((_, deviceIndex) => deviceIndex !== index)
+    }));
+  };
+
   // --- Testing Handlers ---
   const handleTestingChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -363,6 +400,12 @@ export default function ServicesClient({
     setIsSubmitting(true);
     try {
       const isVerification = serviceSubtype === "verification";
+      const devices = calibContact.devices
+        .filter(device => device.name.trim())
+        .map(device => ({
+          name: device.name.trim(),
+          quantity: Math.max(1, Number.parseInt(device.quantity, 10) || 1),
+        }));
       const submissionData = {
         type: serviceSubtype,
         serviceSubtype: serviceSubtype,
@@ -372,11 +415,9 @@ export default function ServicesClient({
           orgName: serviceSubtype === "verification" ? "" : (calibContact.orgName || ""),
           email: calibContact.email || "",
           phone: calibContact.phone || "",
-          message: [
-            calibContact.instrumentList.trim() ? `Список средств измерений:\n${calibContact.instrumentList.trim()}` : "",
-            calibContact.comment.trim() ? `Комментарий:\n${calibContact.comment.trim()}` : "",
-          ].filter(Boolean).join("\n\n")
+          message: calibContact.comment.trim() || ""
         },
+        ...(devices.length ? { devices } : {}),
         submittedAt: new Date().toISOString()
       };
 
@@ -597,7 +638,7 @@ export default function ServicesClient({
                       <h2 className={styles.formTitle}>Оставьте контакты — мы свяжемся</h2>
                       <p className={styles.formSubtitle}>
                         {serviceSubtype === "verification"
-                          ? "Оставьте телефон или email. Список приборов и комментарий можно добавить по желанию — мы свяжемся и уточним детали."
+                          ? "Оставьте телефон или email. Приборы можно добавить по одному и указать количество; комментарий — по желанию."
                           : "Оставьте телефон или email. По желанию добавьте список приборов и комментарий — мы уточним детали при общении."}
                       </p>
 
@@ -666,19 +707,53 @@ export default function ServicesClient({
                         </div>
                       </div>
                       <p className={styles.contactHint}>Достаточно указать телефон или email — можно оставить только один контакт.</p>
-                      <div className={styles.formGroupFull}>
-                        <label className={styles.inputLabel} htmlFor="calibration-instrument-list">
-                          Список средств измерений <span style={{ color: "#7b8999", fontWeight: 400 }}>(необязательно)</span>
-                        </label>
-                        <textarea
-                          id="calibration-instrument-list"
-                          name="instrumentList"
-                          value={calibContact.instrumentList}
-                          onChange={handleCalibContactChange}
-                          className={styles.textArea}
-                          rows={3}
-                          placeholder="Если удобно, перечислите приборы. Можно оставить поле пустым."
-                        />
+                      <div className={styles.formGroupFull + " " + styles.instrumentListGroup}>
+                        <div>
+                          <span className={styles.inputLabel}>Список средств измерений</span>
+                          <span className={styles.optionalLabel}> (необязательно)</span>
+                        </div>
+                        <div className={styles.instrumentRows}>
+                          {calibContact.devices.map((device, index) => (
+                            <div className={styles.instrumentRow} key={index}>
+                              <div className={styles.formGroup}>
+                                <label className={styles.inputLabel} htmlFor={"instrument-name-" + index}>Прибор {index + 1}</label>
+                                <input
+                                  id={"instrument-name-" + index}
+                                  type="text"
+                                  value={device.name}
+                                  onChange={(e) => updateInstrument(index, "name", e.target.value)}
+                                  className={styles.textInput}
+                                  placeholder="Например, манометр"
+                                />
+                              </div>
+                              <div className={styles.formGroup}>
+                                <label className={styles.inputLabel} htmlFor={"instrument-quantity-" + index}>Количество</label>
+                                <input
+                                  id={"instrument-quantity-" + index}
+                                  type="number"
+                                  min="1"
+                                  step="1"
+                                  value={device.quantity}
+                                  onChange={(e) => updateInstrument(index, "quantity", e.target.value)}
+                                  className={styles.textInput}
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                className={styles.removeInstrumentButton}
+                                onClick={() => removeInstrument(index)}
+                                aria-label={"Удалить прибор " + (index + 1)}
+                                title="Удалить прибор"
+                              >
+                                <X size={17} aria-hidden="true" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                        <button type="button" className={styles.addInstrumentButton} onClick={addInstrument}>
+                          <Plus size={16} aria-hidden="true" />
+                          Добавить прибор
+                        </button>
                       </div>
                       <div className={styles.formGroupFull}>
                         <label className={styles.inputLabel} htmlFor="calibration-comment">

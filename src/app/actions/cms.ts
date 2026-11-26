@@ -315,11 +315,17 @@ async function sendEmailNotification(data: any) {
     addRow("Прикрепленный файл", `<a href="${fileUrl}" target="_blank" style="color: #2563eb; font-weight: bold;">${flatData.attachedFile.name || "Скачать файл"} (${flatData.attachedFile.size || ""})</a>`);
   }
 
-  if (flatData.devices && Array.isArray(flatData.devices)) {
+  if (Array.isArray(flatData.devices) && flatData.devices.length > 0) {
     const listLabel = isCalibration ? "Позиции приборов (Калибровка)" : "Позиции приборов (Поверка)";
-    addRow(listLabel, flatData.devices.map((d: any, i: number) => 
-      `${i+1}. ${d.name || "Прибор"} (Тип: ${d.type || "—"}, Зав.№: ${d.serial || "—"}, Кол-во: ${d.quantity || 1}${d.photoUrl ? `, Фото: ${d.photoUrl}` : ""})`
-    ).join("<br/>"));
+    addRow(listLabel, flatData.devices.map((d: any, i: number) => {
+      const details = [
+        d.type ? `Тип: ${d.type}` : "",
+        d.serial ? `Зав.№: ${d.serial}` : "",
+        `Кол-во: ${d.quantity || 1}`,
+        d.photoUrl ? `Фото: ${d.photoUrl}` : "",
+      ].filter(Boolean).join(", ");
+      return `${i + 1}. ${d.name || "Прибор"} (${details})`;
+    }).join("<br/>"));
   }
 
   htmlContent += `
@@ -435,10 +441,15 @@ async function sendTelegramNotification(data: any) {
     text += `<b>Прикрепленный файл:</b> <a href="${fileUrl}">${flatData.attachedFile.name || "Файл"}</a> (${flatData.attachedFile.size || ""})\n`;
   }
 
-  if (flatData.devices && Array.isArray(flatData.devices)) {
+  if (Array.isArray(flatData.devices) && flatData.devices.length > 0) {
     text += `\n<b>Позиции приборов (Поверка):</b>\n`;
     flatData.devices.forEach((d: any, idx: number) => {
-      text += `${idx + 1}. ${d.name || "Прибор"} (Тип: ${d.type || "—"}, Зав.№: ${d.serial || "—"}, Кол-во: ${d.quantity || 1})\n`;
+      const details = [
+        d.type ? `Тип: ${d.type}` : "",
+        d.serial ? `Зав.№: ${d.serial}` : "",
+        `Кол-во: ${d.quantity || 1}`,
+      ].filter(Boolean).join(", ");
+      text += `${idx + 1}. ${d.name || "Прибор"} (${details})\n`;
     });
   }
 
