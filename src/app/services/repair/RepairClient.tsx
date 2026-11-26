@@ -31,7 +31,6 @@ export default function RepairClient() {
   const [deviceModel, setDeviceModel] = useState("");
   const [serialNumber, setSerialNumber] = useState("");
   const [defectDescription, setDefectDescription] = useState("");
-  const [needVerification, setNeedVerification] = useState(true);
   const [consent, setConsent] = useState(true);
 
   // File upload state
@@ -167,7 +166,6 @@ export default function RepairClient() {
         deviceModel: deviceModel || "",
         serialNumber: serialNumber || "",
         defectDescription: defectDescription || "",
-        needVerification: needVerification ? "Да, требуется поверка после ремонта" : "Нет",
         attachedFile: fileUrl ? { name: fileName || "File", url: fileUrl, size: fileSize || "" } : null,
         date: new Date().toISOString()
       };
@@ -648,31 +646,6 @@ export default function RepairClient() {
                       rows={3}
                     />
                   </div>
-                </div>
-
-                {/* Need verification checkbox */}
-                <div style={{
-                  background: "var(--surface)",
-                  border: "1px solid var(--border)",
-                  borderRadius: "8px",
-                  padding: "16px 20px",
-                  marginBottom: "24px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px",
-                  cursor: "pointer"
-                }} onClick={() => setNeedVerification(!needVerification)}>
-                  <input
-                    type="checkbox"
-                    checked={needVerification}
-                    onChange={(e) => setNeedVerification(e.target.checked)}
-                    id="needVerification"
-                    style={{ width: "18px", height: "18px", cursor: "pointer" }}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                  <label htmlFor="needVerification" style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", cursor: "pointer", margin: 0 }}>
-                    Провести поверку средства измерения во ФГИС «АРШИН» после ремонта
-                  </label>
                 </div>
 
                 {/* File Upload Section */}
