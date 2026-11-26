@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { CheckCircle2, FileText, Download, Activity, Check, X, Wrench } from "lucide-react";
+import { CheckCircle2, FileText, Activity, Check, X, Wrench } from "lucide-react";
 import { Button } from "@/components/Button";
 import styles from "./page.module.css";
 import { saveSubmission, suggestParty } from "@/app/actions/cms";
@@ -11,12 +11,14 @@ export default function ServicesClient({
   servicesData,
   labDocs,
   forceForm = null,
+  requestForm = null,
   fixedServiceSubtype = null,
   requestLabel = ""
 }: {
   servicesData: any;
   labDocs: any[];
   forceForm?: "calibration" | "testing" | null;
+  requestForm?: "calibration" | "testing" | null;
   fixedServiceSubtype?: "verification" | "calibration" | null;
   requestLabel?: string;
 }) {
@@ -84,7 +86,7 @@ export default function ServicesClient({
 
     if (forceForm) {
       setActiveForm(forceForm);
-    } else {
+    } else if (!requestForm) {
       const urlParams = new URLSearchParams(window.location.search);
       const formParam = urlParams.get("form");
       if (formParam === "calibration" || formParam === "testing") {
@@ -96,7 +98,7 @@ export default function ServicesClient({
         try { setActiveForm(JSON.parse(savedActiveForm) as any); } catch (e) {}
       }
     }
-  }, [forceForm]);
+  }, [forceForm, requestForm]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -104,6 +106,16 @@ export default function ServicesClient({
       setActiveForm(forceForm);
     }
   }, [forceForm, mounted]);
+
+  useEffect(() => {
+    if (!requestForm || forceForm) return;
+    const openRequestForm = () => {
+      setSubmitted(false);
+      setActiveForm(requestForm);
+    };
+    window.addEventListener("alira:open-service-request", openRequestForm);
+    return () => window.removeEventListener("alira:open-service-request", openRequestForm);
+  }, [requestForm, forceForm]);
 
   useEffect(() => {
     if (fixedServiceSubtype) setServiceSubtype(fixedServiceSubtype);
@@ -120,13 +132,13 @@ export default function ServicesClient({
   }, [testingForm, mounted]);
 
   useEffect(() => {
-    if (!mounted || forceForm) return;
+    if (!mounted || forceForm || requestForm) return;
     if (activeForm) {
       localStorage.setItem("activeForm", JSON.stringify(activeForm));
     } else {
       localStorage.removeItem("activeForm");
     }
-  }, [activeForm, mounted, forceForm]);
+  }, [activeForm, mounted, forceForm, requestForm]);
 
   const clearDraft = (type: "calibration" | "testing") => {
     if (type === "calibration") {
@@ -459,11 +471,11 @@ export default function ServicesClient({
   };
 
   return (
-    <div className={forceForm ? styles.verificationPage : styles.page}>
-      <div className={forceForm ? styles.verificationContainer : styles.container}>
+    <div className={forceForm ? styles.verificationPage : requestForm ? undefined : styles.page}>
+      <div className={forceForm ? styles.verificationContainer : requestForm ? undefined : styles.container}>
 
         {/* Services interactive selectors grid */}
-        {!forceForm && (
+        {!forceForm && !requestForm && (
           <div className={styles.cardsGrid}>
             <div className={`${styles.serviceCard} ${activeForm === "calibration" ? styles.serviceCardActive : ""}`}>
               <div className={styles.cardIcon}>
@@ -510,7 +522,7 @@ export default function ServicesClient({
         )}
 
         {/* Form Anchor */}
-        <div id="service-request" ref={formRef} tabIndex={-1} className={styles.formAnchor} />
+        {!requestForm && <div id="service-request" ref={formRef} tabIndex={-1} className={styles.formAnchor} />}
 
         {/* Forms Render Area in Modal Pop-up or Inline */}
         {activeForm && (
@@ -520,6 +532,8 @@ export default function ServicesClient({
           >
             <div 
               className={forceForm ? styles.inlineForm : styles.modalContainer}
+              role={forceForm ? undefined : "dialog"}
+              aria-modal={forceForm ? undefined : true}
             >
               {!forceForm && (
                 <button
@@ -695,10 +709,6 @@ export default function ServicesClient({
                       <p className={styles.formSubtitle}>
                         Для первого разговора укажите прибор и телефон или почту. Технические детали можно заполнить ниже, если они уже есть.
                       </p>
-
-                      <a href="/uploads/zayavka_ispytaniya_si.docx" className={styles.wordDownloadBtn} download>
-                        <Download size={18} /> Скачать подробный опросный лист (.doc)
-                      </a>
 
                       <div className={styles.formGrid}>
                         <div className={styles.formGroupFull}>

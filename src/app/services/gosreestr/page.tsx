@@ -83,7 +83,7 @@ export default async function GosreestrPage() {
         relatedHref="/services/verification"
         relatedLabel="Нужна поверка прибора?"
       />
-      <ServicesClient servicesData={servicesData} labDocs={labDocs} forceForm="testing" />
+      <ServicesClient servicesData={servicesData} labDocs={labDocs} requestForm="testing" />
     </div>
   );
 }

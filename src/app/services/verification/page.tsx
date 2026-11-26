@@ -113,7 +113,7 @@ export default async function VerificationPage() {
           поверка анализаторов спектра
         </Link>.
       </p>
-      <ServicesClient servicesData={servicesData} labDocs={labDocs} forceForm="calibration" />
+      <ServicesClient servicesData={servicesData} labDocs={labDocs} requestForm="calibration" fixedServiceSubtype="verification" />
     </div>
   );
 }

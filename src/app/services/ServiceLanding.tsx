@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight, Phone } from "lucide-react";
 import styles from "./ServiceLanding.module.css";
+import ServiceRequestLauncher from "@/components/ServiceRequestLauncher";
 
 type LandingCard = {
   title: string;
@@ -76,9 +77,7 @@ export default function ServiceLanding({
           <h1 id="service-title">{title}</h1>
           <p className={styles.lead}>{description}</p>
           <div className={styles.actions}>
-            <a className={styles.primaryAction} href="#service-request">
-              {primaryActionLabel} <ArrowRight size={18} aria-hidden="true" />
-            </a>
+            <ServiceRequestLauncher className={styles.primaryAction} label={primaryActionLabel} />
             <a className={styles.phoneAction} href="tel:+74952293948">
               <Phone size={17} aria-hidden="true" /> +7 (495) 229-39-48
             </a>
@@ -147,9 +146,7 @@ export default function ServiceLanding({
           <h2 id="cta-title">{ctaTitle}</h2>
           <p>{ctaDescription}</p>
         </div>
-        <a className={styles.ctaAction} href="#service-request">
-          {ctaActionLabel || "Обсудить задачу"} <ArrowRight size={18} aria-hidden="true" />
-        </a>
+        <ServiceRequestLauncher className={styles.ctaAction} label={ctaActionLabel || "Обсудить задачу"} />
       </section>
     </div>
   );
