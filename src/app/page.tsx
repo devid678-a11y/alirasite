@@ -68,13 +68,13 @@ export default function Home() {
               <p>Первичная и периодическая поверка оптических и радиочастотных средств измерений. Принимаем прибор, проводим работы и оформляем результат.</p>
               <div className={s.serviceBottom}>
                 <Link href="/services/verification?form=calibration">Рассчитать поверку <ArrowUpRight size={19} aria-hidden="true" /></Link>
-                <span>ОПТИКА · ВЧ</span>
+                
               </div>
             </article>
 
             <article className={`${s.service} ${s.testing}`}>
               <div className={s.serviceTop}>
-                <span className={s.moduleLabel}>02 / ИСПЫТАНИЯ</span>
+                <span className={s.moduleLabel}>02 / ВНЕСЕНИЕ В ГОСРЕЕСТР</span>
                 <FlaskConical size={25} aria-hidden="true" />
               </div>
               <h3>Испытания для утверждения типа</h3>
