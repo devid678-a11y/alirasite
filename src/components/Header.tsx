@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Mail, Menu, Phone, X } from "lucide-react";
-import { Button } from "./Button";
 import styles from "./Header.module.css";
 
 interface HeaderData {
@@ -55,9 +54,6 @@ export const Header: React.FC<{ data?: HeaderData }> = ({ data }) => {
             <a href={`mailto:${email}`} className={styles.mobilePhone}>
               <Mail size={17} aria-hidden="true" /> {email}
             </a>
-            <Button variant="primary" href="/services/verification" onClick={closeMenu}>
-              Рассчитать поверку
-            </Button>
           </div>
         </nav>
 
@@ -70,13 +66,6 @@ export const Header: React.FC<{ data?: HeaderData }> = ({ data }) => {
             <Phone size={17} aria-hidden="true" />
             <span>{phone}</span>
           </a>
-          <Button
-            variant="primary"
-            href="/services/verification"
-            className={styles.headerCta}
-          >
-            Рассчитать поверку
-          </Button>
           <button
             type="button"
             className={styles.menuButton}
