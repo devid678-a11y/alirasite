@@ -723,7 +723,7 @@ export default function RepairClient() {
                     style={{ marginTop: "3px" }}
                   />
                   <label htmlFor="repair-consent">
-                    Я согласен на <Link href="/agreement" target="_blank" style={{ color: "#2563eb" }}>обработку персональных данных</Link> в соответствии с <Link href="/privacy" target="_blank" style={{ color: "#2563eb" }}>политикой конфиденциальности</Link>
+                    Я согласен на <Link href="/agreement" target="_blank" style={{ color: "#2563eb" }}>обработку персональных данных</Link> в соответствии с <Link href="/privacy" target="_blank" style={{ color: "#2563eb" }}>политикой конфиденциальности</Link> <span aria-hidden="true">*</span>
                   </label>
                 </div>
 

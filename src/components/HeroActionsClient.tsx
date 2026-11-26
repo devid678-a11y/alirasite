@@ -103,7 +103,7 @@ export const HeroActionsClient: React.FC = () => {
                 gap: "6px"
               }}>
                 <Upload size={14} />
-                {file ? file.name.substring(0, 18) + "..." : "Прикрепить файл..."}
+                {file ? file.name.substring(0, 18) + "..." : <>Прикрепить файл... <span aria-hidden="true">*</span></>}
                 <input 
                   type="file" 
                   accept=".xlsx,.xls,.doc,.docx,.pdf,.png,.jpg,.jpeg" 
@@ -114,7 +114,7 @@ export const HeroActionsClient: React.FC = () => {
 
               <input 
                 type="tel"
-                placeholder="+7 (999) 000-00-00"
+                placeholder={file ? "+7 (999) 000-00-00 *" : "+7 (999) 000-00-00"}
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 required={!!file}

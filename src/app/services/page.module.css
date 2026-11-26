@@ -876,7 +876,6 @@
 
 
 .instrumentListGroup { margin-top: 2px; }
-.optionalLabel { color: #7b8999; font-size: 13px; font-weight: 400; }
 .instrumentRows { display: flex; flex-direction: column; gap: 10px; }
 .instrumentRow { display: grid; grid-template-columns: minmax(0, 1fr) 130px 42px; align-items: end; gap: 10px; }
 .removeInstrumentButton { width: 42px; height: 42px; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0; border: 1px solid #d9e3ef; border-radius: 10px; background: #fff; color: #596b7f; cursor: pointer; }

@@ -104,7 +104,7 @@ export default function HomeInstrumentListForm() {
       <div className={s.listControls}>
         <label className={s.filePicker}>
           <Paperclip size={18} aria-hidden="true" />
-          <span>{file ? file.name : "Прикрепить перечень"}</span>
+          <span>{file ? file.name : <>Прикрепить перечень <span aria-hidden="true">*</span></>}</span>
           <input
             ref={fileInputRef}
             className={s.fileInput}
@@ -120,7 +120,7 @@ export default function HomeInstrumentListForm() {
           type="text"
           value={contact}
           onChange={(event) => setContact(event.target.value)}
-          placeholder="Телефон или email"
+          placeholder="Телефон или email *"
           aria-label="Телефон или email для ответа"
           autoComplete="email tel"
           required
@@ -132,8 +132,8 @@ export default function HomeInstrumentListForm() {
       </div>
       <div className={s.listFormFoot}>
         <label className={s.consentRow}>
-          <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} />
-          <span>Согласен на <Link href="/agreement" target="_blank">обработку персональных данных</Link> и принимаю <Link href="/privacy" target="_blank">политику конфиденциальности</Link>.</span>
+          <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} required />
+          <span>Согласен на <Link href="/agreement" target="_blank">обработку персональных данных</Link> и принимаю <Link href="/privacy" target="_blank">политику конфиденциальности</Link>. <span aria-hidden="true">*</span></span>
         </label>
         <span className={s.fileHint}>Excel, Word, PDF или CSV · до 10 МБ</span>
       </div>

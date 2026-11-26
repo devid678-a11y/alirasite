@@ -174,7 +174,7 @@ export const MetrologyCalculator: React.FC = () => {
                 <div style={{ display: "flex", gap: "12px", flex: "1 1 340px", justifyContent: "flex-end" }}>
                   <input
                     type="tel"
-                    placeholder="Ваш телефон для получения расчета..."
+                    placeholder="Ваш телефон для получения расчета *"
                     value={contact}
                     onChange={(e) => setContact(e.target.value)}
                     required

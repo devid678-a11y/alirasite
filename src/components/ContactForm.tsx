@@ -325,7 +325,7 @@ export const ContactForm: React.FC<{ formType?: string; productName?: string }> 
                 required 
               />
               <label htmlFor="modal-consent" className={styles.consentLabel}>
-                Я согласен на <Link href="/agreement" target="_blank" onClick={(e) => e.stopPropagation()}>обработку персональных данных</Link> в соответствии с <Link href="/privacy" target="_blank" onClick={(e) => e.stopPropagation()}>политикой конфиденциальности</Link>
+                Я согласен на <Link href="/agreement" target="_blank" onClick={(e) => e.stopPropagation()}>обработку персональных данных</Link> в соответствии с <Link href="/privacy" target="_blank" onClick={(e) => e.stopPropagation()}>политикой конфиденциальности</Link> <span aria-hidden="true">*</span>
               </label>
             </div>
 

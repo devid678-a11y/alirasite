@@ -645,7 +645,7 @@ export default function ServicesClient({
                       <div className={styles.formGridContacts}>
                         {serviceSubtype === "calibration" && (
                         <div className={styles.formGroup} style={{ position: "relative" }}>
-                          <label className={styles.inputLabel} htmlFor="calibration-org-name">Компания (необязательно):</label>
+                          <label className={styles.inputLabel} htmlFor="calibration-org-name">Компания:</label>
                           <input
                             type="text"
                             id="calibration-org-name"
@@ -706,11 +706,11 @@ export default function ServicesClient({
                           />
                         </div>
                       </div>
-                      <p className={styles.contactHint}>Достаточно указать телефон или email — можно оставить только один контакт.</p>
+                      <p className={styles.contactHint}>Телефон или email для связи <span className={styles.requiredStar}>*</span> — можно оставить только один контакт.</p>
                       <div className={styles.formGroupFull + " " + styles.instrumentListGroup}>
                         <div>
                           <span className={styles.inputLabel}>Список средств измерений</span>
-                          <span className={styles.optionalLabel}> (необязательно)</span>
+                          
                         </div>
                         <div className={styles.instrumentRows}>
                           {calibContact.devices.map((device, index) => (
@@ -757,7 +757,7 @@ export default function ServicesClient({
                       </div>
                       <div className={styles.formGroupFull}>
                         <label className={styles.inputLabel} htmlFor="calibration-comment">
-                          Комментарий <span style={{ color: "#7b8999", fontWeight: 400 }}>(необязательно)</span>
+                          Комментарий
                         </label>
                         <textarea
                           id="calibration-comment"
@@ -778,7 +778,7 @@ export default function ServicesClient({
                           required
                         />
                         <span>
-                          Я согласен на <Link href="/agreement" target="_blank">обработку персональных данных</Link> в соответствии с <Link href="/privacy" target="_blank">политикой конфиденциальности</Link>.
+                          Я согласен на <Link href="/agreement" target="_blank">обработку персональных данных</Link> в соответствии с <Link href="/privacy" target="_blank">политикой конфиденциальности</Link>. <span className={styles.requiredStar}>*</span>
                         </span>
                       </label>
 
@@ -840,7 +840,7 @@ export default function ServicesClient({
                             autoComplete="tel"
                           />
                         </div>
-                        <p className={styles.contactHint}>Укажите телефон или электронную почту — достаточно одного варианта.</p>
+                        <p className={styles.contactHint}>Телефон или электронная почта для связи <span className={styles.requiredStar}>*</span> — достаточно одного варианта.</p>
                       </div>
 
                       <details className={styles.optionalFields}>
@@ -1056,7 +1056,7 @@ export default function ServicesClient({
                           required
                         />
                         <span>
-                          Я согласен на <Link href="/agreement" target="_blank">обработку персональных данных</Link> в соответствии с <Link href="/privacy" target="_blank">политикой конфиденциальности</Link>.
+                          Я согласен на <Link href="/agreement" target="_blank">обработку персональных данных</Link> в соответствии с <Link href="/privacy" target="_blank">политикой конфиденциальности</Link>. <span className={styles.requiredStar}>*</span>
                         </span>
                       </label>
 
