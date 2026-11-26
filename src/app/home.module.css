@@ -16,7 +16,7 @@
 .textLink{display:inline-flex;align-items:center;gap:9px;min-height:44px;color:#202b38;font-size:14px;font-weight:650;background:transparent;border:0;padding:0}
 .textLink:hover{color:#2c66b0}
 .scope{position:relative;z-index:1;display:flex;flex-wrap:wrap;gap:10px 25px;color:#465363;border-top:1px solid #d9e3ef;width:100%;padding-top:18px;margin-top:auto;font-size:10px}
-.scope span:before{content:'+';color:#2c66b0;margin-right:8px}
+.scope span{display:inline-flex;align-items:center;gap:8px}.scope span svg{width:14px;height:14px;flex:0 0 auto;color:#2c66b0;stroke-width:1.8}
 .services{margin-top:14px;scroll-margin-top:90px}
 .sectionIntro{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;padding:25px 4px 14px}
 .sectionIntro .eyebrow{font-size:10px;color:#526172}

@@ -4,6 +4,7 @@ import {
   ArrowUpRight,
   BadgeCheck,
   FlaskConical,
+  FileCheck2,
   Package,
   Wrench,
 } from "lucide-react";
@@ -36,19 +37,19 @@ export default function Home() {
               Поверяем оптические и радиочастотные СИ, проводим испытания для утверждения типа и оформляем результат. Берём организацию работ на себя.
             </p>
             <div className={s.actions}>
-              <Link href="/services/verification#service-request" className={s.primaryButton}>
+              <Link href="/services/verification?form=calibration" className={s.primaryButton}>
                 Рассчитать поверку <ArrowRight size={18} aria-hidden="true" />
               </Link>
-              <Link href="/services/gosreestr#service-request" className={s.textLink}>
+              <Link href="/services/gosreestr?form=testing" className={s.textLink}>
                 Заказать испытания <ArrowUpRight size={17} aria-hidden="true" />
               </Link>
             </div>
           </div>
 
           <div className={s.scope} aria-label="Основные направления">
-            <span>ПОВЕРКА</span>
-            <span>ПОСТАВКА</span>
-            <span>УТВЕРЖДЕНИЕ ТИПА</span>
+            <span><BadgeCheck size={14} aria-hidden="true" />ПОВЕРКА</span>
+            <span><Package size={14} aria-hidden="true" />ПОСТАВКА</span>
+            <span><FileCheck2 size={14} aria-hidden="true" />УТВЕРЖДЕНИЕ ТИПА</span>
           </div>
         </section>
 
@@ -66,7 +67,7 @@ export default function Home() {
               <h3>Нужна поверка прибора?</h3>
               <p>Первичная и периодическая поверка оптических и радиочастотных средств измерений. Принимаем прибор, проводим работы и оформляем результат.</p>
               <div className={s.serviceBottom}>
-                <Link href="/services/verification#service-request">Рассчитать поверку <ArrowUpRight size={19} aria-hidden="true" /></Link>
+                <Link href="/services/verification?form=calibration">Рассчитать поверку <ArrowUpRight size={19} aria-hidden="true" /></Link>
                 <span>ОПТИКА · ВЧ</span>
               </div>
             </article>
@@ -79,7 +80,7 @@ export default function Home() {
               <h3>Испытания для утверждения типа</h3>
               <p>Принимаем средство измерений, проводим испытания и готовим документы для утверждения типа. Ведём процесс до оформленного результата.</p>
               <div className={s.serviceBottom}>
-                <Link href="/services/gosreestr#service-request">Заказать испытания <ArrowUpRight size={19} aria-hidden="true" /></Link>
+                <Link href="/services/gosreestr?form=testing">Заказать испытания <ArrowUpRight size={19} aria-hidden="true" /></Link>
                 <span>УТВЕРЖДЕНИЕ ТИПА</span>
               </div>
             </article>

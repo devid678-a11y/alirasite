@@ -86,10 +86,17 @@ export default function ServicesClient({
 
     if (forceForm) {
       setActiveForm(forceForm);
-    } else if (!requestForm) {
+    } else {
       const urlParams = new URLSearchParams(window.location.search);
       const formParam = urlParams.get("form");
-      if (formParam === "calibration" || formParam === "testing") {
+      if (requestForm) {
+        if (formParam === requestForm) {
+          setActiveForm(requestForm);
+          const url = new URL(window.location.href);
+          url.searchParams.delete("form");
+          window.history.replaceState(window.history.state, "", url.toString());
+        }
+      } else if (formParam === "calibration" || formParam === "testing") {
         setActiveForm(formParam as any);
         setTimeout(() => {
           formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
