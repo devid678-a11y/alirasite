@@ -32,7 +32,9 @@ export function updateEntry(path: string, entry: Entry) {
   const previous = readEntry(path);
   save(path, {...entry,sent:previous?.sent,testedAt:previous?.testedAt});
 }
-type TestInstrument = {name:string;type:string;count:number};\n\nexport async function sendTest(path: string, instruments: TestInstrument[] = []) {
+type TestInstrument = {name:string;type:string;count:number};
+
+export async function sendTest(path: string, instruments: TestInstrument[] = []) {
   const entry = readEntry(path);
   if (!entry) return 404;
   if (Date.now() - (entry.testedAt ?? 0) < 60000) return 429;
