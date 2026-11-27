@@ -2,6 +2,12 @@ import { keys, removeEntry, sendTest, subscriptionPath, updateEntry } from "@/li
 
 export const runtime = "nodejs";
 
+function pushKey(value: unknown, length: number) {
+  if (typeof value !== "string" || value.length>100 || !/^[A-Za-z0-9_+/-]+={0,2}$/.test(value)) return "";
+  const bytes = Buffer.from(value, "base64url");
+  return bytes.length===length ? bytes.toString("base64url") : "";
+}
+
 export async function GET() {
   return Response.json({publicKey:keys().publicKey},{headers:{"Cache-Control":"no-store"}});
 }
@@ -33,21 +39,33 @@ export async function POST(request: Request) {
     }
     if (data.action!=="sync") return new Response(null,{status:400});
     const subscription = data.subscription;
-    const endpoint = new URL(subscription.endpoint);
+    let endpoint: URL;
+    try { endpoint = new URL(subscription?.endpoint); }
+    catch { return Response.json({code:"invalid_endpoint"},{status:400}); }
     const host = endpoint.hostname;
-    const allowed = host==="fcm.googleapis.com" || host==="updates.push.services.mozilla.com" ||
-      host==="web.push.apple.com" || host.endsWith(".push.apple.com") || host.endsWith(".notify.windows.com");
-    if (!allowed || endpoint.protocol!=="https:" || endpoint.port || endpoint.username || endpoint.password ||
-        !/^[\w-]{87}=?$/.test(subscription.keys?.p256dh || "") || !/^[\w-]{22}(?:==)?$/.test(subscription.keys?.auth || "") ||
-        !Array.isArray(data.days) || !data.dates || typeof data.dates!=="object") {
-      return new Response(null,{status:400});
+    const allowed = [
+      "fcm.googleapis.com", "android.googleapis.com", "updates.push.services.mozilla.com",
+      "push.services.mozilla.com", "web.push.apple.com", "notify.windows.com",
+    ].includes(host) || host.endsWith(".push.apple.com") || host.endsWith(".notify.windows.com");
+    if (endpoint.protocol!=="https:" || endpoint.port || endpoint.username || endpoint.password) {
+      return Response.json({code:"invalid_endpoint"},{status:400});
     }
-    const days = [0,1,3,7,14,30,60].filter(day=>data.days.includes(day));
+    if (!allowed) return Response.json({code:"unsupported_provider",host},{status:400});
+    const p256dh = pushKey(subscription?.keys?.p256dh,65);
+    const auth = pushKey(subscription?.keys?.auth,16);
+    if (!p256dh || !auth || Buffer.from(p256dh,"base64url")[0]!==4) {
+      return Response.json({code:"invalid_keys"},{status:400});
+    }
+    const selectedDays = Array.isArray(data.days) ? data.days : [30,14,7];
+    const days = [0,1,3,7,14,30,60].filter(day=>selectedDays.includes(day));
+    if (!data.dates || typeof data.dates!=="object" || Array.isArray(data.dates)) {
+      return Response.json({code:"invalid_dates"},{status:400});
+    }
     const dates = Object.fromEntries(Object.entries(data.dates).filter(([date,count])=>
       /^\d{4}-\d{2}-\d{2}$/.test(date) && Number.isInteger(count) && Number(count)>0 && Number(count)<=10000));
     if (Object.keys(dates).length>3700) return new Response(null,{status:413});
     keys();
-    updateEntry(path,{subscription:{endpoint:endpoint.href,keys:{p256dh:subscription.keys.p256dh.replace(/=+$/,""),auth:subscription.keys.auth.replace(/=+$/,"")}},days,dates:dates as Record<string,number>});
+    updateEntry(path,{subscription:{endpoint:endpoint.href,keys:{p256dh,auth}},days,dates:dates as Record<string,number>});
     return new Response(null,{status:204});
   } catch {
     return new Response(null,{status:502});

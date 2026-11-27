@@ -90,6 +90,13 @@ async function send(action, token, subscription) {
     if (details?.code==="provider_rejected") throw Error("Служба доставки отклонила пуш (код "+details.status+").");
     throw Error("Сервер АЛИРЫ не получил ответ от службы доставки пушей.");
   }
+  if (action==="sync" && response.status===400) {
+    const details=await response.json().catch(()=>null);
+    if(details?.code==="unsupported_provider") throw Error("Служба пушей этого браузера не поддерживается ("+details.host+"). Попробуйте обычный Chrome, Edge, Firefox или Safari на iPhone.");
+    if(details?.code==="invalid_endpoint") throw Error("Браузер вернул некорректный адрес подписки.");
+    if(details?.code==="invalid_keys") throw Error("Браузер вернул некорректные ключи подписки.");
+    if(details?.code==="invalid_dates") throw Error("Сервер не принял даты напоминаний.");
+  }
   if (!response.ok) throw Error(action==="sync" ?
     "Не удалось сохранить подписку (код "+response.status+")." :
     "Сервер уведомлений ответил с ошибкой (код "+response.status+").");
