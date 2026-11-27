@@ -33,14 +33,14 @@ function refresh() {
   install.hidden = settings ? !!isInstalled : !canOfferInstall;
   push.hidden = settings ? !(canPush || appleMobile) : !canOfferPush;
   push.textContent = subscribed ? "Выключить пуши" : "Включить пуши";
-  test.hidden = !settings || !subscribed || !canPush || Notification.permission !== "granted";
+  test.hidden = !settings;
   later.hidden = settings;
   intro.hidden = settings;
   title.textContent = settings ? "Приложение и уведомления" : "Кабинет АЛИРЫ на вашем устройстве";
   intro.textContent = canOfferInstall && canOfferPush ? "Добавьте кабинет на главный экран и включите напоминания о поверке." :
     canOfferInstall ? "Добавьте кабинет на главный экран. Он будет открываться с иконки АЛИРЫ." :
     "Включите уведомления, чтобы получать напоминания о поверке.";
-  controls.hidden = settings ? install.hidden && push.hidden : !offerReady || dismissed || (install.hidden && push.hidden);
+  controls.hidden = settings ? false : !offerReady || dismissed || (install.hidden && push.hidden);
   if (settings && controls.previousElementSibling !== content) content.after(controls);
   if (!settings && controls.nextElementSibling !== content) content.before(controls);
 }
@@ -101,7 +101,7 @@ async function send(action, token, subscription) {
     "Не удалось сохранить подписку (код "+response.status+")." :
     "Сервер уведомлений ответил с ошибкой (код "+response.status+").");
 }
-push.addEventListener("click",async()=>{
+async function togglePush() {
   push.disabled=true;
   try {
     const token=localStorage.getItem(storeKey);
@@ -128,12 +128,15 @@ push.addEventListener("click",async()=>{
     describe("Пуши включены. Сроки напоминаний можно выбрать в настройках.");
   } catch(error) { describe(error.message); }
   finally { refresh();push.disabled=false; }
-});
+}
+push.addEventListener("click", () => void togglePush());
 test.addEventListener("click", async () => {
-  const token = localStorage.getItem(storeKey);
-  if (!token || test.disabled) return;
+  if (test.disabled || push.disabled) return;
   test.disabled = true;
   try {
+    if (!localStorage.getItem(storeKey)) await togglePush();
+    const token = localStorage.getItem(storeKey);
+    if (!token) return;
     const worker = await registration;
     const subscription = await worker?.pushManager.getSubscription();
     if (!subscription) throw Error("Включите пуши заново на этом устройстве.");
