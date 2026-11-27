@@ -153,3 +153,10 @@ main{padding-bottom:28px}
 .log-footer{position:sticky;bottom:max(8px,env(safe-area-inset-bottom));margin:10px -9px -8px}
 #notice:not(:empty){bottom:16px}
 }
+
+.app-controls:not([hidden]){display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 18px}
+.app-controls button{border:0;border-radius:999px;padding-inline:16px;font-size:.86rem;font-weight:600}
+#pwa-info{flex-basis:100%;margin:0;font-size:.88rem;color:var(--muted)}
+#pwa-info:empty{display:none}
+
+.app-controls [hidden]{display:none}

@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<meta name="theme-color" content="#173b69">
 <title>Личный кабинет | АЛИРА</title>
 <link rel="stylesheet" href="./style.css">
 <script type="module" src="./app.js"></script>
@@ -15,6 +18,11 @@
 <a href="#overview">Обзор</a><a href="#requests">Заявки на поверку</a><a href="#documents">Документы</a>
 <a href="#activity">История</a><a href="#settings">Настройки</a></div></details></header>
 <div class="layout">
+<section id="app-controls" class="app-controls" aria-label="Приложение и уведомления" hidden>
+<button type="button" id="install-app">На главный экран</button>
+<button type="button" id="push-app">Включить пуши</button>
+<p id="pwa-info" role="status"></p>
+</section>
 <main id="content"></main>
 </div>
 <dialog id="dialog"></dialog>

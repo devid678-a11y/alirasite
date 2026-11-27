@@ -1,3 +1,4 @@
+import {setupPwa, syncPush} from "./pwa.js";
 import {readRegister} from "./import.js";
 
 const $ = id => document.getElementById(id);
@@ -62,6 +63,7 @@ function change(description, mutate) {
   try { localStorage.setItem(storage,JSON.stringify(next)); }
   catch { notify("Не удалось сохранить изменения. Проверьте свободное место в браузере."); return false; }
   state = next;
+  void syncPush();
   return true;
 }
 const heading = (title, description="", action="") => `<div class="heading"><div><h1>${title}</h1>${description ? `<span class="muted">${description}</span>` : ""}</div>${action}</div>`;
@@ -282,7 +284,7 @@ function activity() {
 function settings() {
   return heading("Настройки")+`<form class="panel" data-form="settings"><h2>Организация и напоминания</h2>
     ${field("company","Название организации",state.settings.company,true)}${field("email","Email для напоминаний",state.settings.email,false,"email")}
-    <p class="muted">Настройки сохраняются в браузере. В демо письма не отправляются.</p>
+    <p class="muted">Выберите, за сколько дней до поверки присылать пуши. Включите пуши через кнопку над кабинетом.</p>
     ${[60,30,14,7,3,1,0].map(day=>`<label class="check"><input type="checkbox" name="days" value="${day}" ${state.settings.days.includes(day)?"checked":""}>${day?"За "+day+" дн.":"В день поверки"}</label>`).join("")}
     <button class="primary">Сохранить настройки</button></form>`;
 }
@@ -477,3 +479,13 @@ window.addEventListener("hashchange",()=>{
 });
 if(route().page==="instruments") dueFilter=route().arg||"all";
 render();
+
+setupPwa(() => {
+  const dates = {};
+  for (const instrument of active()) {
+    if (instrument.due && !instrument.id.startsWith("demo-")) {
+      dates[instrument.due] = (dates[instrument.due] || 0) + 1;
+    }
+  }
+  return {dates,days:state.settings.days};
+});
