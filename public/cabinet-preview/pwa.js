@@ -80,7 +80,19 @@ async function send(action, token, subscription) {
     body:JSON.stringify({action,...(subscription ? {...getDates(),subscription:subscription.toJSON()} : {})}),
   });
   if(response.status===429) throw Error("Повторить тест можно через минуту.");
-  if(!response.ok) throw Error("Не удалось связаться с сервером уведомлений.");
+  if (action==="test" && (response.status===404 || response.status===410)) {
+    const error = Error("Подписка устарела.");
+    error.expired = true;
+    throw error;
+  }
+  if (action==="test" && response.status===502) {
+    const details = await response.json().catch(()=>null);
+    if (details?.code==="provider_rejected") throw Error("Служба доставки отклонила пуш (код "+details.status+").");
+    throw Error("Сервер АЛИРЫ не получил ответ от службы доставки пушей.");
+  }
+  if (!response.ok) throw Error(action==="sync" ?
+    "Не удалось сохранить подписку (код "+response.status+")." :
+    "Сервер уведомлений ответил с ошибкой (код "+response.status+").");
 }
 push.addEventListener("click",async()=>{
   push.disabled=true;
@@ -121,8 +133,16 @@ test.addEventListener("click", async () => {
     await send("sync", token, subscription);
     await send("test", token);
     describe("Тест отправлен. Проверьте уведомления на этом устройстве.");
-  } catch (error) { describe(error.message); }
-  finally { test.disabled = false; }
+  } catch (error) {
+    if (error.expired) {
+      const worker = await registration;
+      const subscription = await worker?.pushManager.getSubscription();
+      await subscription?.unsubscribe().catch(()=>{});
+      localStorage.removeItem(storeKey);
+      describe("Подписка устарела. Нажмите «Включить пуши», затем повторите тест.");
+      refresh();
+    } else describe(error.message);
+  } finally { test.disabled = false; }
 });
 export function setupPwa(readDates) {
   getDates=readDates;
