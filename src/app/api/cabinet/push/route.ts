@@ -1,4 +1,4 @@
-import { keys, removeEntry, subscriptionPath, updateEntry } from "@/lib/cabinet-push";
+import { keys, removeEntry, sendTest, subscriptionPath, updateEntry } from "@/lib/cabinet-push";
 
 export const runtime = "nodejs";
 
@@ -18,6 +18,7 @@ export async function POST(request: Request) {
       removeEntry(path);
       return new Response(null,{status:204});
     }
+    if (data.action==="test") return new Response(null,{status:await sendTest(path)});
     if (data.action!=="sync") return new Response(null,{status:400});
     const subscription = data.subscription;
     const endpoint = new URL(subscription.endpoint);

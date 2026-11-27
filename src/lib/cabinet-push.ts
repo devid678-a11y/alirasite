@@ -7,7 +7,7 @@ import webPush from "web-push";
 const directory = process.env.ALIRA_PUSH_DIR || join(homedir(), ".alira-cabinet-push");
 const dayMs = 86400000;
 const appUrl = "/cabinet-preview/index.html#schedule";
-type Entry = { subscription: webPush.PushSubscription; dates: Record<string, number>; days: number[]; sent?: string };
+type Entry = { subscription: webPush.PushSubscription; dates: Record<string, number>; days: number[]; sent?: string; testedAt?: number };
 
 function save(path: string, value: object) {
   writeFileSync(path + ".tmp", JSON.stringify(value), {mode: 0o600});
@@ -29,7 +29,16 @@ export function removeEntry(path: string) {
   if (existsSync(path)) unlinkSync(path);
 }
 export function updateEntry(path: string, entry: Entry) {
-  save(path, {...entry,sent:readEntry(path)?.sent});
+  const previous = readEntry(path);
+  save(path, {...entry,sent:previous?.sent,testedAt:previous?.testedAt});
+}
+export async function sendTest(path: string) {
+  const entry = readEntry(path);
+  if (!entry) return 404;
+  if (Date.now() - (entry.testedAt ?? 0) < 60000) return 429;
+  save(path, {...entry,testedAt:Date.now()});
+  await send(entry,"Тестовый пуш. Уведомления о поверке подключены.");
+  return 204;
 }
 export function send(entry: Entry, body: string) {
   const {publicKey,privateKey} = keys();

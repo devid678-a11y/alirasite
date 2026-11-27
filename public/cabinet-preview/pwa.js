@@ -3,6 +3,7 @@ let getDates;
 const controls = document.getElementById("app-controls");
 const install = document.getElementById("install-app");
 const push = document.getElementById("push-app");
+const test = document.getElementById("push-test");
 const info = document.getElementById("pwa-info");
 const storeKey = "alira-push-token";
 const dismissedKey = "alira-app-offer-dismissed";
@@ -32,6 +33,7 @@ function refresh() {
   install.hidden = settings ? !!isInstalled : !canOfferInstall;
   push.hidden = settings ? !(canPush || appleMobile) : !canOfferPush;
   push.textContent = subscribed ? "Выключить пуши" : "Включить пуши";
+  test.hidden = !settings || !subscribed || !canPush || Notification.permission !== "granted";
   later.hidden = settings;
   intro.hidden = settings;
   title.textContent = settings ? "Приложение и уведомления" : "Кабинет АЛИРЫ на вашем устройстве";
@@ -77,6 +79,7 @@ async function send(action, token, subscription) {
     headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},
     body:JSON.stringify({action,...(subscription ? {...getDates(),subscription:subscription.toJSON()} : {})}),
   });
+  if(response.status===429) throw Error("Повторить тест можно через минуту.");
   if(!response.ok) throw Error("Не удалось связаться с сервером уведомлений.");
 }
 push.addEventListener("click",async()=>{
@@ -106,6 +109,20 @@ push.addEventListener("click",async()=>{
     describe("Пуши включены. Сроки напоминаний можно выбрать в настройках.");
   } catch(error) { describe(error.message); }
   finally { refresh();push.disabled=false; }
+});
+test.addEventListener("click", async () => {
+  const token = localStorage.getItem(storeKey);
+  if (!token || test.disabled) return;
+  test.disabled = true;
+  try {
+    const worker = await registration;
+    const subscription = await worker?.pushManager.getSubscription();
+    if (!subscription) throw Error("Включите пуши заново на этом устройстве.");
+    await send("sync", token, subscription);
+    await send("test", token);
+    describe("Тест отправлен. Проверьте уведомления на этом устройстве.");
+  } catch (error) { describe(error.message); }
+  finally { test.disabled = false; }
 });
 export function setupPwa(readDates) {
   getDates=readDates;
