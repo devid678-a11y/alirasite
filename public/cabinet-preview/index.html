@@ -8,8 +8,8 @@
 <link rel="apple-touch-icon" href="./icon-192.png">
 <meta name="theme-color" content="#173b69">
 <title>Личный кабинет | АЛИРА</title>
-<link rel="stylesheet" href="./style.css">
-<script type="module" src="./app.js"></script>
+<link rel="stylesheet" href="./style.css?v=app-offer">
+<script type="module" src="./app.js?v=app-offer"></script>
 </head>
 <body>
 <header><a class="brand" href="#instruments"><img src="/logo-new.png" width="28" height="28" alt=""> АЛИРА</a>
@@ -19,8 +19,11 @@
 <a href="#activity">История</a><a href="#settings">Настройки</a></div></details></header>
 <div class="layout">
 <section id="app-controls" class="app-controls" aria-label="Приложение и уведомления" hidden>
-<button type="button" id="install-app">На главный экран</button>
+<h2 id="pwa-title">Приложение и уведомления</h2>
+<p id="pwa-intro"></p>
+<button type="button" class="primary" id="install-app">На главный экран</button>
 <button type="button" id="push-app">Включить пуши</button>
+<button type="button" id="pwa-later">Позже</button>
 <p id="pwa-info" role="status"></p>
 </section>
 <main id="content"></main>

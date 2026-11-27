@@ -1,4 +1,4 @@
-import {setupPwa, syncPush} from "./pwa.js";
+import {setupPwa, syncPush} from "./pwa.js?v=app-offer";
 import {readRegister} from "./import.js";
 
 const $ = id => document.getElementById(id);
@@ -284,7 +284,7 @@ function activity() {
 function settings() {
   return heading("Настройки")+`<form class="panel" data-form="settings"><h2>Организация и напоминания</h2>
     ${field("company","Название организации",state.settings.company,true)}${field("email","Email для напоминаний",state.settings.email,false,"email")}
-    <p class="muted">Выберите, за сколько дней до поверки присылать пуши. Включите пуши через кнопку над кабинетом.</p>
+    <p class="muted">Выберите, за сколько дней до поверки присылать пуши.</p>
     ${[60,30,14,7,3,1,0].map(day=>`<label class="check"><input type="checkbox" name="days" value="${day}" ${state.settings.days.includes(day)?"checked":""}>${day?"За "+day+" дн.":"В день поверки"}</label>`).join("")}
     <button class="primary">Сохранить настройки</button></form>`;
 }

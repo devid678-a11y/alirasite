@@ -160,3 +160,8 @@ main{padding-bottom:28px}
 #pwa-info:empty{display:none}
 
 .app-controls [hidden]{display:none}
+
+.app-controls:not([hidden]){padding:16px;background:#fff;border:1px solid #dce8f6;border-radius:16px}
+.app-controls h2,#pwa-intro{flex-basis:100%;margin:0}
+#pwa-intro{color:var(--muted);font-size:.88rem}
+#pwa-later{background:transparent;color:var(--muted)}

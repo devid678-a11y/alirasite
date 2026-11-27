@@ -5,6 +5,14 @@ const install = document.getElementById("install-app");
 const push = document.getElementById("push-app");
 const info = document.getElementById("pwa-info");
 const storeKey = "alira-push-token";
+const dismissedKey = "alira-app-offer-dismissed";
+const later = document.getElementById("pwa-later");
+const title = document.getElementById("pwa-title");
+const intro = document.getElementById("pwa-intro");
+const content = document.getElementById("content");
+let offerReady = false;
+let installed = false;
+let dismissed = localStorage.getItem(dismissedKey) === "1";
 const standalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone;
 const appleMobile = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
   (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
@@ -14,22 +22,50 @@ const registration = "serviceWorker" in navigator ?
 
 function describe(message) { info.textContent=message; }
 function refresh() {
-  install.hidden = !!standalone();
-  push.hidden = !(appleMobile || ("PushManager" in window && "Notification" in window));
-  push.textContent = localStorage.getItem(storeKey) ? "Выключить пуши" : "Включить пуши";
-  controls.hidden = install.hidden && push.hidden;
+  const settings = location.hash === "#settings";
+  const subscribed = !!localStorage.getItem(storeKey);
+  const isInstalled = installed || standalone();
+  const canPush = "PushManager" in window && "Notification" in window;
+  const canOfferPush = canPush && !subscribed && Notification.permission !== "denied" &&
+    (!appleMobile || isInstalled);
+  const canOfferInstall = !isInstalled && (appleMobile || !!installPrompt);
+  install.hidden = settings ? !!isInstalled : !canOfferInstall;
+  push.hidden = settings ? !(canPush || appleMobile) : !canOfferPush;
+  push.textContent = subscribed ? "Выключить пуши" : "Включить пуши";
+  later.hidden = settings;
+  intro.hidden = settings;
+  title.textContent = settings ? "Приложение и уведомления" : "Кабинет АЛИРЫ на вашем устройстве";
+  intro.textContent = canOfferInstall && canOfferPush ? "Добавьте кабинет на главный экран и включите напоминания о поверке." :
+    canOfferInstall ? "Добавьте кабинет на главный экран. Он будет открываться с иконки АЛИРЫ." :
+    "Включите уведомления, чтобы получать напоминания о поверке.";
+  controls.hidden = settings ? install.hidden && push.hidden : !offerReady || dismissed || (install.hidden && push.hidden);
+  if (settings && controls.previousElementSibling !== content) content.after(controls);
+  if (!settings && controls.nextElementSibling !== content) content.before(controls);
 }
+later.addEventListener("click", () => {
+  dismissed = true;
+  localStorage.setItem(dismissedKey, "1");
+  describe("");
+  refresh();
+});
+window.addEventListener("hashchange", refresh);
 window.addEventListener("beforeinstallprompt",event=>{
   event.preventDefault();
   installPrompt=event;
   refresh();
 });
-window.addEventListener("appinstalled",()=>{ installPrompt=null; install.hidden=true; describe(""); });
+window.addEventListener("appinstalled",()=>{ installPrompt=null; installed=true; describe(""); refresh(); });
 install.addEventListener("click",async()=>{
   if(installPrompt){
     const prompt=installPrompt;
     installPrompt=null;
-    await prompt.prompt();
+    try {
+      const choice = await prompt.prompt();
+      if (choice?.outcome === "accepted") installed = true;
+    } catch {
+      describe("Установить кабинет можно через меню браузера.");
+    }
+    refresh();
     return;
   }
   describe(appleMobile ? "Откройте кабинет в Safari. Нажмите «Поделиться» → «На экран Домой», затем откройте АЛИРУ с главного экрана." :
@@ -74,6 +110,7 @@ push.addEventListener("click",async()=>{
 export function setupPwa(readDates) {
   getDates=readDates;
   refresh();
+  window.setTimeout(() => { offerReady = true; refresh(); }, 1200);
   void syncPush();
 }
 let queued = Promise.resolve();
