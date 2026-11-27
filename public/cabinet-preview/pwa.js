@@ -73,11 +73,11 @@ install.addEventListener("click",async()=>{
   describe(appleMobile ? "Откройте кабинет в Safari. Нажмите «Поделиться» → «На экран Домой», затем откройте АЛИРУ с главного экрана." :
     "В меню браузера выберите «Установить приложение» или «Добавить на главный экран».");
 });
-async function send(action, token, subscription) {
+async function send(action, token, subscription, extra = {}) {
   const response = await fetch("/api/cabinet/push",{
     method:"POST",
     headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},
-    body:JSON.stringify({action,...(subscription ? {...getDates(),subscription:subscription.toJSON()} : {})}),
+    body:JSON.stringify({action,...extra,...(subscription ? {...getDates(),subscription:subscription.toJSON()} : {})}),
   });
   if(response.status===429) throw Error("Повторить тест можно через минуту.");
   if (action==="test" && (response.status===404 || response.status===410)) {
@@ -100,6 +100,23 @@ async function send(action, token, subscription) {
   if (!response.ok) throw Error(action==="sync" ?
     "Не удалось сохранить подписку (код "+response.status+")." :
     "Сервер уведомлений ответил с ошибкой (код "+response.status+").");
+}
+function testInstrumentSummary() {
+  try {
+    const cabinet = JSON.parse(localStorage.getItem("alira-cabinet-preview-v1") || "{}");
+    const groups = new Map();
+    for (const item of (Array.isArray(cabinet.instruments) ? cabinet.instruments : []).filter(item => item && !item.archived)) {
+      const name = String(item.name || "").replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, 80);
+      if (!name) continue;
+      const type = String(item.model || "").replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, 80) || "не указан";
+      const key = name + "\u0000" + type;
+      const quantity = Number.isInteger(item.quantity) && item.quantity > 0 ? item.quantity : 1;
+      const current = groups.get(key) || {name,type,count:0};
+      current.count = Math.min(10000,current.count + quantity);
+      groups.set(key,current);
+    }
+    return [...groups.values()].slice(0, 3);
+  } catch { return []; }
 }
 async function togglePush() {
   push.disabled=true;
@@ -141,7 +158,7 @@ test.addEventListener("click", async () => {
     const subscription = await worker?.pushManager.getSubscription();
     if (!subscription) throw Error("Включите пуши заново на этом устройстве.");
     await send("sync", token, subscription);
-    await send("test", token);
+    await send("test", token, undefined, {instruments:testInstrumentSummary()});
     describe("Тест отправлен. Проверьте уведомления на этом устройстве.");
   } catch (error) {
     if (error.expired) {

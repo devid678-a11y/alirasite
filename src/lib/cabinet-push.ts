@@ -32,12 +32,17 @@ export function updateEntry(path: string, entry: Entry) {
   const previous = readEntry(path);
   save(path, {...entry,sent:previous?.sent,testedAt:previous?.testedAt});
 }
-export async function sendTest(path: string) {
+type TestInstrument = {name:string;type:string;count:number};\n\nexport async function sendTest(path: string, instruments: TestInstrument[] = []) {
   const entry = readEntry(path);
   if (!entry) return 404;
   if (Date.now() - (entry.testedAt ?? 0) < 60000) return 429;
   save(path, {...entry,testedAt:Date.now()});
-  await send(entry,"Тестовый пуш. Уведомления о поверке подключены.");
+  const summary = instruments.slice(0,3).map(item =>
+    `${item.name} (тип: ${item.type || "не указан"}) — ${item.count} шт.`);
+  const body = summary.length
+    ? `Тест: ваши приборы поверены: ${summary.join("; ")}.`
+    : "Тест: ваши приборы поверены. Добавьте приборы в кабинет, чтобы увидеть их в уведомлении.";
+  await send(entry,body.slice(0,500));
   return 204;
 }
 export function send(entry: Entry, body: string) {

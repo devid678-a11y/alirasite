@@ -3,7 +3,7 @@ self.addEventListener("activate", event => event.waitUntil(self.clients.claim())
 self.addEventListener("push", event => {
   const message = event.data?.json();
   if (!message) return;
-  event.waitUntil(self.registration.showNotification("АЛИРА · Поверка", {
+  event.waitUntil(self.registration.showNotification(message.title || "АЛИРА · Поверка", {
     body:message.body,
     icon:"/cabinet-preview/icon-192.png",
   }));

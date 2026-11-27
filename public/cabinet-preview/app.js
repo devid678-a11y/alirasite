@@ -1,4 +1,4 @@
-import {setupPwa, syncPush} from "./pwa.js?v=visible-push-test";
+import {setupPwa, syncPush} from "./pwa.js?v=verified-device-test";
 import {readRegister} from "./import.js";
 
 const $ = id => document.getElementById(id);

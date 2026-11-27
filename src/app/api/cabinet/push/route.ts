@@ -26,7 +26,16 @@ export async function POST(request: Request) {
     }
     if (data.action==="test") {
       try {
-        return new Response(null,{status:await sendTest(path)});
+        const instruments = (Array.isArray(data.instruments) ? data.instruments : []).slice(0,3).flatMap((item:unknown) => {
+          if (!item || typeof item!=="object") return [];
+          const value = item as {name?:unknown;type?:unknown;count?:unknown};
+          const clean = (text:unknown) => typeof text==="string" ? text.replace(/[\u0000-\u001f\u007f]/g," ").replace(/\\s+/g," ").trim().slice(0,80) : "";
+          const name=clean(value.name);
+          const type=clean(value.type);
+          const count=Number(value.count);
+          return name && Number.isInteger(count) && count>0 && count<=10000 ? [{name,type,count}] : [];
+        });
+        return new Response(null,{status:await sendTest(path,instruments)});
       } catch (error) {
         const {statusCode,code} = error as {statusCode?:number;code?:string};
         if (statusCode===404 || statusCode===410) {
